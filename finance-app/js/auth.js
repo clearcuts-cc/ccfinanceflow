@@ -1,7 +1,7 @@
 /**
  * Authentication Logic for FinanceFlow
  */
-const API_BASE = '/api/auth';
+const API_BASE = `${CONFIG.API_BASE_URL}/api/auth`;
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');

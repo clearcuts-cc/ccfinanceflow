@@ -4,7 +4,7 @@
  * Drop-in replacement for the IndexedDB-based data.js
  */
 
-const API_BASE = '/api';
+const API_BASE = `${CONFIG.API_BASE_URL}/api`;
 
 class DataLayerAPI {
     constructor() {
