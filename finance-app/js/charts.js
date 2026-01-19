@@ -42,6 +42,12 @@ class ChartsManager {
      * Initialize all charts
      */
     async init() {
+        // Check if Chart.js is loaded
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js library is not loaded. Analytics visualizations will be disabled.');
+            return;
+        }
+
         // Set Chart.js defaults
         Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.responsive = true;

@@ -21,8 +21,15 @@ class ClientsManager {
      * Bind event listeners
      */
     bindEvents() {
-        // Add client button
-        document.getElementById('addClientBtn').addEventListener('click', () => this.openClientModal());
+        // Add client button - using event delegation for robustness
+        document.body.addEventListener('click', (e) => {
+            const btn = e.target.closest('#addClientBtn');
+            if (btn) {
+                e.preventDefault();
+                console.log('Add Client button clicked (via delegation)');
+                this.openClientModal();
+            }
+        });
 
         // Client form
         document.getElementById('clientForm').addEventListener('submit', (e) => {
@@ -133,9 +140,15 @@ class ClientsManager {
      * Open client modal
      */
     openClientModal(client = null) {
+        console.log('Opening Client Modal...', client ? 'Edit Mode' : 'Add Mode');
         const modal = document.getElementById('clientModal');
         const title = document.getElementById('clientModalTitle');
         const form = document.getElementById('clientForm');
+
+        if (!modal) {
+            console.error('FATAL: Client modal element not found!');
+            return;
+        }
 
         form.reset();
 
@@ -150,14 +163,26 @@ class ClientsManager {
             document.getElementById('clientId').value = '';
         }
 
-        modal.classList.add('active');
+        // Force display flex and then add active class for animation
+        modal.style.display = 'flex';
+        // Small timeout to allow display change to register before opacity transition
+        requestAnimationFrame(() => {
+            modal.classList.add('active');
+        });
     }
 
     /**
      * Close client modal
      */
     closeClientModal() {
-        document.getElementById('clientModal').classList.remove('active');
+        console.log('Closing Client Modal');
+        const modal = document.getElementById('clientModal');
+        modal.classList.remove('active');
+
+        // Wait for transition to finish before hiding
+        setTimeout(() => {
+            modal.style.display = '';
+        }, 300);
     }
 
     /**

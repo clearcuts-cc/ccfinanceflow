@@ -25,6 +25,12 @@ class App {
      * Initialize the application
      */
     async init() {
+        // Check Authentication
+        if (!localStorage.getItem('token')) {
+            window.location.href = 'login.html';
+            return;
+        }
+
         try {
             // Initialize database
             await dataLayer.init();
@@ -33,6 +39,7 @@ class App {
             themeManager.init();
 
             // Load settings
+            console.log('Loading settings...');
             await this.loadSettings();
 
             // Initialize UI
@@ -40,16 +47,38 @@ class App {
             this.bindNavigation();
 
             // Initial data load
+            console.log('Refreshing data...');
             await this.refreshData();
 
             // Initialize charts
-            await chartsManager.init();
+            console.log('Initializing charts...');
+            try {
+                await chartsManager.init();
+            } catch (err) {
+                console.error('Charts failed to init:', err);
+            }
 
             // Initialize invoice manager
-            await invoiceManager.init();
+            console.log('Initializing invoice manager...');
+            try {
+                await invoiceManager.init();
+            } catch (err) {
+                console.error('Invoice Manager init failed:', err);
+            }
 
             // Initialize clients manager
-            await clientsManager.init();
+            console.log('Initializing client manager...');
+            try {
+                await clientsManager.init();
+            } catch (err) {
+                console.error('Client Manager init failed:', err);
+            }
+
+            // Initialize profile manager
+            if (window.profileManager) {
+                console.log('Initializing profile manager...');
+                window.profileManager.init();
+            }
 
             // Subscribe to data changes
             dataLayer.subscribe(DATA_STORES.ENTRIES, () => this.onDataChange());
@@ -57,8 +86,8 @@ class App {
 
             console.log('FinanceFlow initialized successfully');
         } catch (error) {
-            console.error('Failed to initialize app:', error);
-            showToast('Failed to initialize application', 'error');
+            console.error('FATAL: Failed to initialize app:', error);
+            showToast(`Failed to initialize: ${error.message}`, 'error');
         }
     }
 
@@ -66,7 +95,14 @@ class App {
      * Load user settings
      */
     async loadSettings() {
-        const settings = await dataLayer.getAllSettings();
+        let settings = {};
+        try {
+            settings = await dataLayer.getAllSettings();
+        } catch (e) {
+            console.warn('Could not load settings, using defaults', e);
+        }
+
+        settings = settings || {};
 
         // Currency
         window.appCurrency = settings.currency || '₹';
@@ -106,7 +142,9 @@ class App {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const page = link.dataset.page;
-                this.navigateTo(page);
+                if (page) {
+                    this.navigateTo(page);
+                }
             });
         });
 
@@ -168,11 +206,12 @@ class App {
         // Update page title
         const titles = {
             dashboard: 'Dashboard',
-            finances: 'Finance Entries',
+            entries: 'Finance Entries',
             analytics: 'Analytics',
             invoices: 'Invoices',
             clients: 'Clients',
-            settings: 'Settings'
+            settings: 'Settings',
+            profile: 'My Profile'
         };
         document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
 
@@ -180,11 +219,20 @@ class App {
         document.querySelectorAll('.page').forEach(p => {
             p.classList.remove('active');
         });
-        document.getElementById(`${page}Page`).classList.add('active');
+
+        const targetPage = document.getElementById(`${page}Page`);
+        if (targetPage) {
+            targetPage.classList.add('active');
+        }
 
         // Refresh charts if navigating to analytics
         if (page === 'analytics' || page === 'dashboard') {
             chartsManager.updateAllCharts();
+        }
+
+        // Load profile if navigating to profile
+        if (page === 'profile' && window.profileManager) {
+            window.profileManager.renderProfilePage();
         }
     }
 
@@ -192,6 +240,14 @@ class App {
      * Bind UI events
      */
     bindEvents() {
+        // Logout
+        document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        });
+
         // Entry modal
         const entryModal = document.getElementById('entryModal');
         const addEntryBtn = document.getElementById('addEntryBtn');

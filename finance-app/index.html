@@ -15,11 +15,11 @@
         rel="stylesheet">
 
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="js/chart.min.js"></script>
 
     <!-- jsPDF for PDF generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+    <script src="js/jspdf.min.js"></script>
+    <script src="js/jspdf.autotable.min.js"></script>
 
     <!-- Main Stylesheet -->
     <link rel="stylesheet" href="css/styles.css">
@@ -47,8 +47,8 @@
                 </button>
             </div>
 
-            <nav class="sidebar-nav">
-                <ul class="nav-list">
+            <nav class="sidebar-nav" style="display: flex; flex-direction: column;">
+                <ul class="nav-list" style="flex: 1;">
                     <li class="nav-item">
                         <a href="#dashboard" class="nav-link active" data-page="dashboard">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -61,9 +61,9 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#finances" class="nav-link" data-page="finances">
+                        <a href="#entries" class="nav-link" data-page="entries">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                             </svg>
                             <span>Finance Entries</span>
                         </a>
@@ -71,7 +71,9 @@
                     <li class="nav-item">
                         <a href="#analytics" class="nav-link" data-page="analytics">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 20V10M12 20V4M6 20v-6" />
+                                <line x1="18" y1="20" x2="18" y2="10" />
+                                <line x1="12" y1="20" x2="12" y2="4" />
+                                <line x1="6" y1="20" x2="6" y2="14" />
                             </svg>
                             <span>Analytics</span>
                         </a>
@@ -80,7 +82,10 @@
                         <a href="#invoices" class="nav-link" data-page="invoices">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <line x1="16" y1="13" x2="8" y2="13" />
+                                <line x1="16" y1="17" x2="8" y2="17" />
+                                <polyline points="10 9 9 9 8 9" />
                             </svg>
                             <span>Invoices</span>
                         </a>
@@ -90,7 +95,8 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                                 <circle cx="9" cy="7" r="4" />
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                             </svg>
                             <span>Clients</span>
                         </a>
@@ -103,6 +109,29 @@
                                     d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24" />
                             </svg>
                             <span>Settings</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <ul class="nav-list"
+                    style="margin-top: auto; padding-top: 10px; border-top: 1px solid var(--color-border);">
+                    <li class="nav-item">
+                        <a href="#profile" class="nav-link" data-page="profile">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <span>Profile</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" id="logoutBtn" style="color: var(--color-danger);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            <span>Logout</span>
                         </a>
                     </li>
                 </ul>
@@ -237,7 +266,7 @@
                     <div class="recent-transactions">
                         <div class="section-header">
                             <h3>Recent Transactions</h3>
-                            <a href="#finances" class="view-all-link" data-page="finances">View All</a>
+                            <a href="#entries" class="view-all-link" data-page="entries">View All</a>
                         </div>
                         <div class="transactions-table-wrapper">
                             <table class="transactions-table">
@@ -260,7 +289,7 @@
                 </section>
 
                 <!-- Finance Entries Page -->
-                <section class="page" id="financesPage">
+                <section class="page" id="entriesPage">
                     <!-- Filters -->
                     <div class="filters-bar">
                         <div class="filter-group">
@@ -604,7 +633,20 @@
 
                         <!-- Invoice History -->
                         <div class="invoice-history-section">
-                            <h3>Invoice History</h3>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--color-border); padding-bottom: 10px;">
+                                <h3 style="margin: 0; padding: 0; border: none;">Invoice History</h3>
+                                <button class="btn btn-secondary btn-sm" id="importInvoicesBtn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        style="width: 14px; height: 14px;">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    Import JSON
+                                </button>
+                                <input type="file" id="importInvoicesInput" style="display: none" accept=".json">
+                            </div>
                             <div class="invoice-history-list" id="invoiceHistoryList">
                                 <!-- Dynamic content -->
                             </div>
@@ -643,6 +685,94 @@
                         </svg>
                         <h3>No clients yet</h3>
                         <p>Add your first client to get started</p>
+                    </div>
+                </section>
+
+                <!-- Profile Page -->
+                <section class="page" id="profilePage">
+                    <div class="profile-layout">
+                        <!-- Identity Card -->
+                        <div class="card profile-card-identity">
+                            <div class="profile-cover"></div>
+                            <div class="profile-avatar-large">
+                                <div class="profile-avatar-img-container">
+                                    <img id="pageAvatarPreview" src="" style="display:none">
+                                    <span id="pageAvatarPlaceholder"></span>
+                                </div>
+                                <button class="avatar-upload-btn"
+                                    onclick="document.getElementById('pageAvatarInput').click()" title="Change Picture">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path
+                                            d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
+                                        </path>
+                                        <circle cx="12" cy="13" r="4"></circle>
+                                    </svg>
+                                </button>
+                                <input type="file" id="pageAvatarInput" hidden accept="image/*">
+                            </div>
+                            <h2 id="displayProfileName">Loading...</h2>
+                            <p class="profile-email-text" id="displayProfileEmail">...</p>
+
+                            <div class="profile-badges">
+                                <span class="badge badge-primary">User</span>
+                                <span class="badge badge-success">Active</span>
+                            </div>
+
+                            <div class="profile-stats-grid">
+                                <div class="stat-item">
+                                    <span class="label">Joined</span>
+                                    <span class="value" id="displayJoinedDate">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Edit Details Card -->
+                        <div class="card profile-card-form">
+                            <div class="card-header">
+                                <h3>Personal Details</h3>
+                            </div>
+                            <div class="card-body">
+                                <form id="fullProfileForm">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Full Name</label>
+                                            <input type="text" id="pageProfileName" required class="form-control">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Phone Number</label>
+                                            <input type="tel" id="pageProfilePhone" class="form-control"
+                                                placeholder="+91 XXXXX XXXX">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Email Address</label>
+                                        <input type="email" id="pageProfileEmail" required class="form-control">
+                                    </div>
+
+                                    <div class="security-section">
+                                        <h4>Security & Password</h4>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label>Current Password</label>
+                                                <input type="password" id="pageCurrentPassword" class="form-control"
+                                                    placeholder="Required to save changes">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>New Password</label>
+                                                <input type="password" id="pageNewPassword" class="form-control"
+                                                    placeholder="Leave blank to keep">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-actions"
+                                        style="margin-top: 30px; display: flex; justify-content: flex-end;">
+                                        <button type="submit" class="btn btn-primary" style="min-width: 150px;">Save
+                                            Changes</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -812,6 +942,9 @@
         </div>
     </div>
 
+    <!-- Profile Modal -->
+    <!-- Profile Modal Removed (Moved to Profile Page) -->
+
     <!-- Invoice Preview Modal -->
     <div class="modal-overlay" id="invoicePreviewModal">
         <div class="modal modal-large">
@@ -870,11 +1003,15 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <!-- JavaScript Modules -->
-    <script src="js/data.js"></script>
+    <!-- Using API-based data layer (data-api.js) for backend integration -->
+    <!-- To use offline IndexedDB mode, change to data.js -->
+    <script src="js/data-api.js"></script>
     <script src="js/theme.js"></script>
     <script src="js/charts.js"></script>
+    <script src="js/profile.js"></script>
     <script src="js/invoices.js"></script>
     <script src="js/clients.js"></script>
+    <script src="js/main.js"></script>
     <script src="js/app.js"></script>
 </body>
 

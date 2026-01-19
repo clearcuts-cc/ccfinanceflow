@@ -24,7 +24,14 @@ class InvoiceManager {
      * Load agency details from settings
      */
     async loadAgencyDetails() {
-        const settings = await dataLayer.getAllSettings();
+        let settings = {};
+        try {
+            settings = await dataLayer.getAllSettings();
+        } catch (e) {
+            console.warn('Failed to load agency settings', e);
+        }
+
+        settings = settings || {};
 
         document.getElementById('invoiceAgencyName').value = settings.agencyName || '';
         document.getElementById('invoiceAgencyContact').value = settings.agencyContact || '';
@@ -90,6 +97,15 @@ class InvoiceManager {
 
         // Preview invoice
         document.getElementById('previewInvoiceBtn').addEventListener('click', () => this.previewInvoice());
+
+        // Import invoices
+        const importBtn = document.getElementById('importInvoicesBtn');
+        const importInput = document.getElementById('importInvoicesInput');
+
+        if (importBtn && importInput) {
+            importBtn.addEventListener('click', () => importInput.click());
+            importInput.addEventListener('change', (e) => this.handleImportInvoices(e));
+        }
 
         // Download PDF
         document.getElementById('downloadInvoiceBtn').addEventListener('click', () => this.downloadPDF());
@@ -351,7 +367,9 @@ class InvoiceManager {
      */
     async downloadPDF() {
         const data = this.currentInvoice || this.getInvoiceData();
-        const currency = window.appCurrency || '₹';
+        const appCurrency = window.appCurrency || '₹';
+        // Fix for standard fonts not supporting ₹ symbol in PDF
+        const currency = appCurrency === '₹' ? 'Rs. ' : appCurrency;
 
         // Use jsPDF
         const { jsPDF } = window.jspdf;
@@ -360,47 +378,28 @@ class InvoiceManager {
         const pageHeight = doc.internal.pageSize.getHeight();
 
         // Colors
-        const primaryColor = [99, 102, 241]; // Indigo
-        const darkColor = [15, 23, 42];
-        const grayColor = [100, 116, 139];
-        const lightGray = [241, 245, 249];
-        const successColor = [16, 185, 129];
+        const primaryColor = [99, 102, 241]; // Indigo (Process Blue)
+        const darkColor = [15, 23, 42];      // Slate 900
+        const grayColor = [100, 116, 139];   // Slate 500
+        const lightGray = [241, 245, 249];   // Slate 100
+        const dividerColor = [226, 232, 240]; // Slate 200
 
-        // ===== HEADER SECTION =====
-        // Primary color header stripe
-        doc.setFillColor(...primaryColor);
-        doc.rect(0, 0, pageWidth, 45, 'F');
+        // Helper to format date
+        const formatDate = (dateStr) => {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        };
 
-        // Invoice title
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(28);
-        doc.setFont('helvetica', 'bold');
-        doc.text('INVOICE', 20, 28);
+        // ================= HEADER SECTION =================
+        let yPos = 20;
 
-        // Invoice number badge
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'normal');
-        doc.text(data.invoiceNumber, 20, 38);
-
-        // Pending stamp on header
-        const warningColor = [245, 158, 11]; // Orange/Warning
-        doc.setFillColor(...warningColor);
-        doc.roundedRect(pageWidth - 60, 15, 45, 20, 3, 3, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.text('PENDING', pageWidth - 37.5, 28, { align: 'center' });
-
-        // ===== AGENCY & INVOICE DETAILS =====
-        let yPos = 60;
-
-        // Agency Name
+        // 1. Top Left: Agency Name & Details
         doc.setTextColor(...darkColor);
-        doc.setFontSize(16);
+        doc.setFontSize(18);
         doc.setFont('helvetica', 'bold');
         doc.text(data.agencyName || 'Your Agency', 20, yPos);
 
-        // Agency Contact & Address
         yPos += 7;
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
@@ -418,74 +417,90 @@ class InvoiceManager {
             });
         }
 
-        // Invoice details on right side
-        let rightY = 60;
-        const rightX = pageWidth - 20;
+        // 2. Top Right: INVOICE Label & Details
+        let rightY = 20;
+        doc.setTextColor(...primaryColor);
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('INVOICE', pageWidth - 20, rightY, { align: 'right' });
 
-        doc.setTextColor(...grayColor);
-        doc.setFontSize(9);
-        doc.text('Invoice Date', rightX, rightY, { align: 'right' });
-        rightY += 5;
+        rightY += 8;
         doc.setTextColor(...darkColor);
         doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.text(formatDate(data.invoiceDate), rightX, rightY, { align: 'right' });
+        doc.text(data.invoiceNumber, pageWidth - 20, rightY, { align: 'right' });
 
-        rightY += 10;
-        doc.setTextColor(...grayColor);
+        rightY += 6;
         doc.setFontSize(9);
+        doc.setTextColor(...grayColor);
         doc.setFont('helvetica', 'normal');
-        doc.text('Due Date', rightX, rightY, { align: 'right' });
+        doc.text(`Date: ${formatDate(data.invoiceDate)}`, pageWidth - 20, rightY, { align: 'right' });
+
         rightY += 5;
-        doc.setTextColor(...darkColor);
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.text(formatDate(data.dueDate), rightX, rightY, { align: 'right' });
+        doc.text(`Due: ${formatDate(data.dueDate)}`, pageWidth - 20, rightY, { align: 'right' });
 
-        // ===== BILL TO SECTION =====
+        // ================= DIVIDER =================
         yPos = Math.max(yPos, rightY) + 15;
-
-        // Section divider
-        doc.setDrawColor(...lightGray);
+        doc.setDrawColor(...dividerColor);
         doc.setLineWidth(0.5);
         doc.line(20, yPos, pageWidth - 20, yPos);
-
         yPos += 15;
 
-        // Bill To label
-        doc.setFillColor(...lightGray);
-        doc.roundedRect(20, yPos - 5, 45, 14, 2, 2, 'F');
-        doc.setTextColor(...primaryColor);
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.text('BILL TO', 25, yPos + 4);
+        // ================= CLIENT & STATUS SECTION =================
 
-        yPos += 20;
-
-        // Client Name
-        doc.setTextColor(...darkColor);
-        doc.setFontSize(13);
-        doc.setFont('helvetica', 'bold');
-        doc.text(data.clientName || '-', 20, yPos);
-
-        yPos += 6;
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
+        // Left: Bill To
+        doc.setFontSize(8);
         doc.setTextColor(...grayColor);
+        doc.setFont('helvetica', 'bold');
+        doc.text('BILL TO', 20, yPos);
+
+        let billToY = yPos + 6;
+        doc.setFontSize(11);
+        doc.setTextColor(...darkColor);
+        doc.text(data.clientName || '-', 20, billToY);
+
+        billToY += 6;
+        doc.setFontSize(10);
+        doc.setTextColor(...grayColor);
+        doc.setFont('helvetica', 'normal');
 
         if (data.clientAddress) {
             const clientLines = data.clientAddress.split('\n');
             clientLines.forEach(line => {
-                doc.text(line.trim(), 20, yPos);
-                yPos += 5;
+                doc.text(line.trim(), 20, billToY);
+                billToY += 5;
             });
         }
 
-        // ===== SERVICES TABLE =====
-        yPos += 10;
+        // Right: Payment Status
+        doc.setFontSize(8);
+        doc.setTextColor(...grayColor);
+        doc.setFont('helvetica', 'bold');
+        doc.text('PAYMENT STATUS', pageWidth / 2 + 20, yPos);
 
-        const tableData = data.services.map((s, index) => [
-            (index + 1).toString(),
+        const statusY = yPos + 4;
+        const status = (data.paymentStatus || 'pending').toUpperCase();
+
+        // Status Badge Logic
+        let statusColor = [245, 158, 11]; // Orange (Pending)
+        let statusText = 'PENDING';
+
+        if (status === 'RECEIVED' || status === 'PAID') {
+            statusColor = [16, 185, 129]; // Green
+            statusText = 'PAID';
+        }
+
+        // Draw Badge
+        doc.setFillColor(...statusColor);
+        doc.roundedRect(pageWidth / 2 + 20, statusY, 20, 6, 3, 3, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'bold');
+        doc.text(statusText, pageWidth / 2 + 30, statusY + 4, { align: 'center' });
+
+        // ================= TABLE SECTION =================
+        yPos = Math.max(billToY, statusY + 15) + 10;
+
+        const tableData = data.services.map((s) => [
             s.name,
             s.quantity.toString(),
             `${currency}${s.rate.toFixed(2)}`,
@@ -494,112 +509,74 @@ class InvoiceManager {
 
         doc.autoTable({
             startY: yPos,
-            head: [['#', 'Service Description', 'Qty', 'Rate', 'Amount']],
+            head: [['Service Description', 'Qty', 'Rate', 'Amount']],
             body: tableData,
             theme: 'plain',
             headStyles: {
-                fillColor: [...primaryColor],
-                textColor: 255,
+                fillColor: [...lightGray],
+                textColor: [...grayColor],
                 fontStyle: 'bold',
-                fontSize: 10,
-                cellPadding: 6
+                fontSize: 9,
+                cellPadding: 8
             },
             bodyStyles: {
                 fontSize: 10,
-                cellPadding: 6,
-                textColor: [...darkColor]
-            },
-            alternateRowStyles: {
-                fillColor: [...lightGray]
+                cellPadding: 8,
+                textColor: [...darkColor],
+                lineColor: [...dividerColor],
+                lineWidth: { bottom: 0.1 }
             },
             columnStyles: {
-                0: { cellWidth: 15, halign: 'center' },
-                1: { cellWidth: 'auto' },
-                2: { cellWidth: 20, halign: 'center' },
-                3: { cellWidth: 30, halign: 'right' },
-                4: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
+                0: { cellWidth: 'auto' }, // Description gets remaining space
+                1: { cellWidth: 20, halign: 'center' },
+                2: { cellWidth: 35, halign: 'right' },
+                3: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
             },
-            margin: { left: 20, right: 20 },
-            tableLineColor: [...lightGray],
-            tableLineWidth: 0.1
+            margin: { left: 20, right: 20 }
         });
 
-        // ===== TOTALS SECTION =====
-        let totalsY = doc.lastAutoTable.finalY + 15;
-        const totalsBoxX = pageWidth - 100;
-        const totalsBoxWidth = 80;
+        // ================= TOTALS SECTION =================
+        let totalsY = doc.lastAutoTable.finalY + 10;
+        const totalsRight = pageWidth - 20;
 
-        // Totals background box
-        const totalsHeight = data.taxPercent > 0 && data.discountPercent > 0 ? 70 :
-            (data.taxPercent > 0 || data.discountPercent > 0 ? 58 : 45);
-        doc.setFillColor(250, 250, 252);
-        doc.roundedRect(totalsBoxX, totalsY - 5, totalsBoxWidth, totalsHeight, 3, 3, 'F');
+        const printTotalRow = (label, value, isBold = false, isPrimary = false) => {
+            doc.setFontSize(isBold ? 11 : 10);
+            doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+            doc.setTextColor(...(isPrimary ? primaryColor : (isBold ? darkColor : grayColor)));
 
-        // Subtotal
-        doc.setFontSize(10);
-        doc.setTextColor(...grayColor);
-        doc.setFont('helvetica', 'normal');
-        doc.text('Subtotal', totalsBoxX + 5, totalsY + 5);
-        doc.setTextColor(...darkColor);
-        doc.text(`${currency}${data.subtotal.toFixed(2)}`, totalsBoxX + totalsBoxWidth - 5, totalsY + 5, { align: 'right' });
+            doc.text(label, totalsRight - 50, totalsY, { align: 'right' });
+            doc.text(value, totalsRight, totalsY, { align: 'right' });
+            totalsY += 8;
+        };
 
-        totalsY += 12;
+        printTotalRow('Subtotal', `${currency}${data.subtotal.toFixed(2)}`);
 
-        // Tax (if applicable)
         if (data.taxPercent > 0) {
-            doc.setTextColor(...grayColor);
-            doc.text(`Tax (${data.taxPercent}%)`, totalsBoxX + 5, totalsY + 5);
-            doc.setTextColor(...darkColor);
-            doc.text(`${currency}${data.taxAmount.toFixed(2)}`, totalsBoxX + totalsBoxWidth - 5, totalsY + 5, { align: 'right' });
-            totalsY += 12;
+            printTotalRow(`Tax (${data.taxPercent}%)`, `${currency}${data.taxAmount.toFixed(2)}`);
         }
-
-        // Discount (if applicable)
         if (data.discountPercent > 0) {
-            doc.setTextColor(...grayColor);
-            doc.text(`Discount (${data.discountPercent}%)`, totalsBoxX + 5, totalsY + 5);
-            doc.setTextColor(...successColor);
-            doc.text(`-${currency}${data.discountAmount.toFixed(2)}`, totalsBoxX + totalsBoxWidth - 5, totalsY + 5, { align: 'right' });
-            totalsY += 12;
+            printTotalRow(`Discount (${data.discountPercent}%)`, `-${currency}${data.discountAmount.toFixed(2)}`);
         }
-
-        // Grand Total divider
-        doc.setDrawColor(...primaryColor);
-        doc.setLineWidth(0.5);
-        doc.line(totalsBoxX + 5, totalsY + 2, totalsBoxX + totalsBoxWidth - 5, totalsY + 2);
-        totalsY += 10;
 
         // Grand Total
-        doc.setFillColor(...primaryColor);
-        doc.roundedRect(totalsBoxX, totalsY - 3, totalsBoxWidth, 18, 3, 3, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.text('TOTAL', totalsBoxX + 8, totalsY + 8);
-        doc.setFontSize(13);
-        doc.text(`${currency}${data.grandTotal.toFixed(2)}`, totalsBoxX + totalsBoxWidth - 8, totalsY + 8, { align: 'right' });
+        totalsY += 5;
+        doc.setDrawColor(...dividerColor);
+        doc.setLineWidth(0.5);
+        doc.line(totalsRight - 90, totalsY - 8, totalsRight, totalsY - 8);
 
-        // ===== FOOTER SECTION =====
-        // Thank you note
-        const footerY = pageHeight - 40;
+        printTotalRow('Grand Total', `${currency}${data.grandTotal.toFixed(2)}`, true, true);
 
-        doc.setFillColor(...lightGray);
-        doc.rect(0, footerY - 10, pageWidth, 50, 'F');
-
-        doc.setTextColor(...darkColor);
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Thank you for your business!', 20, footerY + 5);
-
-        doc.setTextColor(...grayColor);
+        // ================= FOOTER =================
+        const footerY = pageHeight - 30;
         doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
-        doc.text('Payment is due within 30 days. Please include the invoice number with your payment.', 20, footerY + 15);
+        doc.setTextColor(...darkColor);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Thank you for your business!', 20, footerY);
 
-        // Generated by
         doc.setFontSize(8);
-        doc.text(`Generated on ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`,
-            pageWidth - 20, footerY + 25, { align: 'right' });
+        doc.setTextColor(...grayColor);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Payment is due within 30 days. Please include the invoice number with your payment.', 20, footerY + 5);
 
         // Save PDF
         doc.save(`${data.invoiceNumber}.pdf`);
@@ -843,6 +820,44 @@ class InvoiceManager {
         } catch (error) {
             console.error('Error deleting invoice:', error);
             showToast('Failed to delete invoice', 'error');
+        }
+    }
+
+    /**
+     * Handle importing invoices from JSON
+     */
+    async handleImportInvoices(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            let data;
+
+            try {
+                data = JSON.parse(text);
+            } catch (err) {
+                throw new Error('Invalid JSON file format');
+            }
+
+            // Allow importing a single object or an array
+            const invoices = Array.isArray(data) ? data : [data];
+
+            showToast('Importing invoices...', 'info');
+            const result = await dataLayer.importInvoices(invoices);
+
+            if (result.success) {
+                showToast(result.message, 'success');
+                await this.renderInvoiceHistory(); // Refresh list
+                await this.generateNewInvoiceNumber(); // Update next ID
+            } else {
+                throw new Error(result.error?.message || 'Import failed');
+            }
+        } catch (error) {
+            console.error('Import error:', error);
+            showToast(`Import Failed: ${error.message}`, 'error');
+        } finally {
+            e.target.value = ''; // Reset input
         }
     }
 }
