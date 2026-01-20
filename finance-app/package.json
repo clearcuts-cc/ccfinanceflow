@@ -1,0 +1,12 @@
+{
+  "name": "financeflow-app",
+  "version": "1.0.0",
+  "description": "FinanceFlow - Creative Agency Finance Tracker",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve ."
+  },
+  "keywords": ["finance", "invoice", "tracker"],
+  "author": "Kiruba",
+  "license": "MIT"
+}

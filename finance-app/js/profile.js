@@ -26,8 +26,26 @@ class ProfileManager {
             avatarInput.addEventListener('change', (e) => this.handleAvatarChange(e));
         }
 
-        // Load user data for header and page
+        // Load user data from localStorage first (immediate), then refresh from API
+        this.loadFromLocalStorage();
+        this.updateHeaderAvatar();
+
+        // Then fetch fresh data from API
         await this.loadCurrentUser();
+    }
+
+    /**
+     * Load user from localStorage (for immediate display)
+     */
+    loadFromLocalStorage() {
+        try {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                this.currentUser = JSON.parse(storedUser);
+            }
+        } catch (e) {
+            console.warn('Could not parse stored user:', e);
+        }
     }
 
     /**
@@ -35,8 +53,14 @@ class ProfileManager {
      */
     async loadCurrentUser() {
         try {
-            const userData = await dataLayer._request('/auth/me');
-            this.currentUser = userData.user || userData;
+            const response = await dataLayer._request('/auth/me');
+            // Handle different API response formats
+            this.currentUser = response.user || response.data || response;
+
+            // Update localStorage with fresh data
+            if (this.currentUser) {
+                localStorage.setItem('user', JSON.stringify(this.currentUser));
+            }
 
             this.updateHeaderAvatar();
 
@@ -46,7 +70,9 @@ class ProfileManager {
                 this.renderProfilePage();
             }
         } catch (error) {
-            console.warn('Failed to load user data:', error);
+            console.warn('Failed to load user data from API, using localStorage:', error);
+            // Still update UI with localStorage data
+            this.updateHeaderAvatar();
         }
     }
 
@@ -69,9 +95,13 @@ class ProfileManager {
      */
     renderProfilePage() {
         if (!this.currentUser) {
-            // Try loading if missing
-            this.loadCurrentUser();
-            return;
+            // Try loading from localStorage first
+            this.loadFromLocalStorage();
+            // If still missing, fetch from API
+            if (!this.currentUser) {
+                this.loadCurrentUser();
+                return;
+            }
         }
 
         // Update Identity Card
