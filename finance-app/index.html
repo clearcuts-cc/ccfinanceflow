@@ -50,8 +50,8 @@
                 </button>
             </div>
 
-            <nav class="sidebar-nav" style="display: flex; flex-direction: column;">
-                <ul class="nav-list" style="flex: 1;">
+            <nav class="sidebar-nav">
+                <ul class="nav-list primary-nav">
                     <li class="nav-item">
                         <a href="#dashboard" class="nav-link active" data-page="dashboard">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -116,8 +116,7 @@
                     </li>
                 </ul>
 
-                <ul class="nav-list"
-                    style="margin-top: auto; padding-top: 10px; border-top: 1px solid var(--color-border);">
+                <ul class="nav-list bottom-nav">
                     <li class="nav-item">
                         <a href="#profile" class="nav-link" data-page="profile">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -128,7 +127,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link" id="logoutBtn" style="color: var(--color-danger);">
+                        <a href="#" class="nav-link text-danger" id="logoutBtn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                                 <polyline points="16 17 21 12 16 7"></polyline>
@@ -177,7 +176,7 @@
                         <input type="text" placeholder="Search..." id="globalSearch">
                     </div>
                     <div class="user-profile">
-                        <div class="avatar" id="headerAvatar" style="cursor: pointer;" title="Go to Profile">
+                        <div class="avatar cursor-pointer" id="headerAvatar" title="Go to Profile">
                             <span>CA</span>
                         </div>
                     </div>
@@ -389,7 +388,7 @@
                                 <!-- Dynamic content -->
                             </tbody>
                         </table>
-                        <div class="empty-state" id="entriesEmptyState" style="display: none;">
+                        <div class="empty-state hidden" id="entriesEmptyState">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                                 <path d="M14 2v6h6M12 11v6M9 14h6" />
@@ -464,7 +463,7 @@
                                         <div class="form-group">
                                             <label for="agencyLogo">Agency Logo</label>
                                             <div class="logo-upload">
-                                                <input type="file" id="agencyLogo" accept="image/*" hidden>
+                                                <input type="file" id="agencyLogo" accept="image/*" class="hidden">
                                                 <div class="logo-preview" id="logoPreview">
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                         stroke-width="2">
@@ -636,19 +635,18 @@
 
                         <!-- Invoice History -->
                         <div class="invoice-history-section">
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--color-border); padding-bottom: 10px;">
-                                <h3 style="margin: 0; padding: 0; border: none;">Invoice History</h3>
+                            <div class="invoice-history-header">
+                                <h3>Invoice History</h3>
                                 <button class="btn btn-secondary btn-sm" id="importInvoicesBtn">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        style="width: 14px; height: 14px;">
+                                        class="icon-sm">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                         <polyline points="7 10 12 15 17 10"></polyline>
                                         <line x1="12" y1="15" x2="12" y2="3"></line>
                                     </svg>
                                     Import JSON
                                 </button>
-                                <input type="file" id="importInvoicesInput" style="display: none" accept=".json">
+                                <input type="file" id="importInvoicesInput" class="hidden" accept=".json">
                             </div>
                             <div class="invoice-history-list" id="invoiceHistoryList">
                                 <!-- Dynamic content -->
@@ -699,7 +697,7 @@
                             <div class="profile-cover"></div>
                             <div class="profile-avatar-large">
                                 <div class="profile-avatar-img-container">
-                                    <img id="pageAvatarPreview" src="" style="display:none">
+                                    <img id="pageAvatarPreview" src="" class="hidden">
                                     <span id="pageAvatarPlaceholder"></span>
                                 </div>
                                 <button class="avatar-upload-btn"
@@ -711,6 +709,7 @@
                                         <circle cx="12" cy="13" r="4"></circle>
                                     </svg>
                                 </button>
+
                                 <input type="file" id="pageAvatarInput" hidden accept="image/*">
                             </div>
                             <h2 id="displayProfileName">Loading...</h2>
@@ -768,9 +767,8 @@
                                         </div>
                                     </div>
 
-                                    <div class="form-actions"
-                                        style="margin-top: 30px; display: flex; justify-content: flex-end;">
-                                        <button type="submit" class="btn btn-primary" style="min-width: 150px;">Save
+                                    <div class="form-actions mt-30 flex-end">
+                                        <button type="submit" class="btn btn-primary min-w-150">Save
                                             Changes</button>
                                     </div>
                                 </form>

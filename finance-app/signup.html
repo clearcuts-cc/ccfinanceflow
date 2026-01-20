@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -928,6 +928,13 @@
 
     <!-- Auth Logic -->
     <script src="js/config.js"></script>
+    <script src="js/theme.js"></script>
+    <script>
+        // Initialize theme independent of main app
+        if (window.themeManager) {
+            themeManager.init();
+        }
+    </script>
     <script src="js/auth.js"></script>
 </body>
 
