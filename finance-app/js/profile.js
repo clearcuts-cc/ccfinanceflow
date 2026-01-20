@@ -189,11 +189,18 @@ class ProfileManager {
         }
 
         try {
+            // BACKEND LIMITATION: Sending large Base64 images often causes 413 or 500 API errors.
+            // For now, we only update text fields. Avatar upload requires a dedicated endpoint or cloud storage.
+
+            if (this.avatarBase64) {
+                showToast('Note: Avatar update temporarily disabled to prevent server errors.', 'info');
+            }
+
             const payload = {
                 name,
                 email,
                 phone,
-                avatar: this.avatarBase64 !== null ? this.avatarBase64 : undefined,
+                // avatar: this.avatarBase64, // DISABLED: Prevents Payload Too Large / Internal Server Error
                 currentPassword: currentPassword || undefined,
                 newPassword: newPassword || undefined
             };
@@ -209,8 +216,15 @@ class ProfileManager {
                 showToast('Profile updated successfully', 'success');
 
                 if (result.user) {
-                    this.currentUser = result.user;
-                    localStorage.setItem('user', JSON.stringify(result.user));
+                    // Update Local State merge with existing in case backend didn't return everything
+                    this.currentUser = { ...this.currentUser, ...result.user };
+
+                    // If we had a local avatar preview, keep it in UI even if not saved to backend yet
+                    if (this.avatarBase64) {
+                        this.currentUser.avatar = this.avatarBase64;
+                    }
+
+                    localStorage.setItem('user', JSON.stringify(this.currentUser));
 
                     // Update UI
                     this.updateHeaderAvatar();

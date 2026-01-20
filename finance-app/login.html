@@ -901,6 +901,60 @@
         <div class="auth-footer">
             Don't have an account? <a href="signup.html">Sign Up</a>
         </div>
+        <div style="text-align: center; margin-top: 10px; font-size: 0.85rem;">
+            <a href="#" id="forgotPasswordLink"
+                style="color: var(--color-text-secondary); text-decoration: none;">Forgot Password?</a>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal-overlay" id="forgotPasswordModal">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Reset Password</h3>
+                <button class="modal-close" id="closeForgotModal" aria-label="Close modal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="forgotPasswordForm" class="modal-form">
+                <p
+                    style="margin-bottom: 20px; color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.5;">
+                    Enter your email address and we'll send you a link to reset your password.
+                </p>
+                <div class="form-group">
+                    <label for="resetEmail">Email Address</label>
+                    <input type="email" id="resetEmail" required placeholder="name@example.com">
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary btn-full" id="sendResetBtn">Send Reset Link</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- OTP Verification Modal -->
+    <div class="modal-overlay" id="otpModal">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Device Verification</h3>
+            </div>
+            <form id="otpForm" class="modal-form">
+                <p
+                    style="margin-bottom: 20px; color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.5;">
+                    We detected a new device/location. Please enter the 6-digit code sent to your email.
+                </p>
+                <div class="form-group">
+                    <label for="otpCode">Verification Code</label>
+                    <input type="text" id="otpCode" required placeholder="123456" maxlength="6"
+                        style="letter-spacing: 5px; text-align: center; font-size: 1.5rem;">
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary btn-full" id="verifyOtpBtn">Verify & Login</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Auth Logic -->
