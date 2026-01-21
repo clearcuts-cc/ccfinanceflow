@@ -24,7 +24,12 @@ const fromDbEntry = (row) => ({
     status: row.status,
     paymentMode: row.payment_mode,
     userId: row.user_id,
-    createdAt: row.created_at
+    createdAt: row.created_at,
+    // Approval workflow fields
+    approvalStatus: row.approval_status || 'approved',
+    createdByName: row.created_by_name || 'Unknown',
+    approvedBy: row.approved_by,
+    approvedAt: row.approved_at
 });
 
 const toDbInvoice = (invoice) => ({
@@ -111,6 +116,50 @@ class DataLayerAPI {
     }
 
     /**
+     * Get current user's role (admin/employee)
+     */
+    async getCurrentUserRole() {
+        const userId = await this.getCurrentUserId();
+        if (!userId) return null;
+
+        const { data, error } = await supabaseClient
+            .from('users')
+            .select('role')
+            .eq('id', userId)
+            .single();
+
+        if (error) {
+            console.warn('Could not fetch user role:', error);
+            return 'admin'; // Default to admin for backward compatibility
+        }
+        return data?.role || 'admin';
+    }
+
+    /**
+     * Check if current user is admin
+     */
+    async isAdmin() {
+        const role = await this.getCurrentUserRole();
+        return role === 'admin';
+    }
+
+    /**
+     * Get current user's name
+     */
+    async getCurrentUserName() {
+        const userId = await this.getCurrentUserId();
+        if (!userId) return 'Unknown';
+
+        const { data } = await supabaseClient
+            .from('users')
+            .select('name')
+            .eq('id', userId)
+            .single();
+
+        return data?.name || 'Unknown';
+    }
+
+    /**
      * Handle Supabase errors
      */
     handleError(error, context = 'Operation') {
@@ -150,10 +199,30 @@ class DataLayerAPI {
 
     async addEntry(entry) {
         const userId = await this.getCurrentUserId();
+        const userRole = await this.getCurrentUserRole();
+        const userName = await this.getCurrentUserName();
         const dbEntry = toDbEntry(entry);
+
+        // Employees' entries need approval, admins' entries are auto-approved
+        const approvalStatus = userRole === 'admin' ? 'approved' : 'pending';
+
+        // Get admin_id: for admins it's their own ID, for employees it's their admin's ID
+        let adminId = userId;
+        if (userRole === 'employee') {
+            // Get admin_id from user metadata (set during employee signup)
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            adminId = session?.user?.user_metadata?.admin_id || userId;
+        }
+
         const { data, error } = await supabaseClient
             .from('finance_entries')
-            .insert({ ...dbEntry, user_id: userId })
+            .insert({
+                ...dbEntry,
+                user_id: userId,
+                admin_id: adminId,
+                approval_status: approvalStatus,
+                created_by_name: userName
+            })
             .select()
             .single();
 
@@ -198,16 +267,75 @@ class DataLayerAPI {
         return fromDbEntry(data);
     }
 
-    async getAllEntries() {
+    async getAllEntries(includeAllStatuses = false) {
+        const userId = await this.getCurrentUserId();
+        let query = supabaseClient
+            .from('finance_entries')
+            .select('*')
+            .eq('user_id', userId);
+
+        // By default, only show approved entries (for dashboard/stats)
+        if (!includeAllStatuses) {
+            query = query.eq('approval_status', 'approved');
+        }
+
+        const { data, error } = await query.order('date', { ascending: false });
+
+        if (error) this.handleError(error, 'Get all entries');
+        return (data || []).map(fromDbEntry);
+    }
+
+    /**
+     * Get entries pending approval (admin only)
+     */
+    async getPendingEntries() {
         const userId = await this.getCurrentUserId();
         const { data, error } = await supabaseClient
             .from('finance_entries')
             .select('*')
             .eq('user_id', userId)
-            .order('date', { ascending: false });
+            .eq('approval_status', 'pending')
+            .order('created_at', { ascending: false });
 
-        if (error) this.handleError(error, 'Get all entries');
+        if (error) this.handleError(error, 'Get pending entries');
         return (data || []).map(fromDbEntry);
+    }
+
+    /**
+     * Approve an entry (admin only)
+     */
+    async approveEntry(id) {
+        const userId = await this.getCurrentUserId();
+        const { data, error } = await supabaseClient
+            .from('finance_entries')
+            .update({
+                approval_status: 'approved',
+                approved_by: userId,
+                approved_at: new Date().toISOString()
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) this.handleError(error, 'Approve entry');
+        this.notifyListeners(DATA_STORES.ENTRIES);
+        return fromDbEntry(data);
+    }
+
+    /**
+     * Decline an entry (admin only)
+     */
+    async declineEntry(id) {
+        const { data, error } = await supabaseClient
+            .from('finance_entries')
+            .update({ approval_status: 'declined' })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) this.handleError(error, 'Decline entry');
+        this.notifyListeners(DATA_STORES.ENTRIES);
+        return fromDbEntry(data);
     }
 
     async getFilteredEntries(filters = {}) {
@@ -576,6 +704,137 @@ class DataLayerAPI {
         return clients.find(c => c.name.toLowerCase() === name.toLowerCase());
     }
 
+    // ==================== Employees (Admin Only) ====================
+
+    /**
+     * Add a new employee (admin only)
+     * Creates a Supabase auth user and stores employee record
+     */
+    async addEmployee(employee) {
+        const adminId = await this.getCurrentUserId();
+
+        // First, create the auth user for the employee
+        // Note: This requires Supabase service role key or admin API
+        // For security, employee creation should ideally go through a backend
+        // Here we'll just create the employee record and they'll need to sign up
+
+        const { data, error } = await supabaseClient
+            .from('employees')
+            .insert({
+                admin_id: adminId,
+                name: employee.name,
+                email: employee.email
+            })
+            .select()
+            .single();
+
+        if (error) this.handleError(error, 'Add employee');
+        this.notifyListeners(DATA_STORES.EMPLOYEES);
+        return data;
+    }
+
+    /**
+     * Create employee auth account and link to employee record
+     * This creates a Supabase auth user for the employee
+     */
+    async createEmployeeAccount(employeeId, email, password) {
+        // Sign up the employee
+        const { data: authData, error: authError } = await supabaseClient.auth.admin.createUser({
+            email: email,
+            password: password,
+            email_confirm: true,
+            user_metadata: { role: 'employee' }
+        });
+
+        if (authError) {
+            console.error('Error creating employee auth:', authError);
+            throw authError;
+        }
+
+        // Update employee record with auth user ID
+        if (authData?.user) {
+            await supabaseClient
+                .from('employees')
+                .update({ user_id: authData.user.id })
+                .eq('id', employeeId);
+
+            // Also create entry in users table with employee role
+            await supabaseClient
+                .from('users')
+                .insert({
+                    id: authData.user.id,
+                    name: (await this.getEmployee(employeeId))?.name || 'Employee',
+                    email: email,
+                    role: 'employee'
+                });
+        }
+
+        return authData;
+    }
+
+    /**
+     * Get all employees for current admin
+     */
+    async getAllEmployees() {
+        const adminId = await this.getCurrentUserId();
+        const { data, error } = await supabaseClient
+            .from('employees')
+            .select('*')
+            .eq('admin_id', adminId)
+            .order('created_at', { ascending: false });
+
+        if (error) this.handleError(error, 'Get all employees');
+        return data || [];
+    }
+
+    /**
+     * Get single employee by ID
+     */
+    async getEmployee(id) {
+        const { data, error } = await supabaseClient
+            .from('employees')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) this.handleError(error, 'Get employee');
+        return data;
+    }
+
+    /**
+     * Update employee
+     */
+    async updateEmployee(id, employee) {
+        const { data, error } = await supabaseClient
+            .from('employees')
+            .update({
+                name: employee.name,
+                email: employee.email,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) this.handleError(error, 'Update employee');
+        this.notifyListeners(DATA_STORES.EMPLOYEES);
+        return data;
+    }
+
+    /**
+     * Delete employee
+     */
+    async deleteEmployee(id) {
+        const { error } = await supabaseClient
+            .from('employees')
+            .delete()
+            .eq('id', id);
+
+        if (error) this.handleError(error, 'Delete employee');
+        this.notifyListeners(DATA_STORES.EMPLOYEES);
+        return true;
+    }
+
     // ==================== Settings ====================
 
     async getSetting(key) {
@@ -684,6 +943,7 @@ const DATA_STORES = {
     ENTRIES: 'finance_entries',
     INVOICES: 'invoices',
     CLIENTS: 'clients',
+    EMPLOYEES: 'employees',
     SETTINGS: 'settings'
 };
 

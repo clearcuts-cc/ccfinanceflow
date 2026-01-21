@@ -1701,6 +1701,248 @@ table {
     flex: 1;
 }
 
+/* ==================== Employees Page ==================== */
+.employees-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.employees-header h2 {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.employees-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.employee-card {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    transition: all 0.2s ease;
+}
+
+.employee-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.employee-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.employee-avatar span {
+    color: white;
+    font-weight: 600;
+    font-size: var(--font-size-base);
+}
+
+.employee-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.employee-name {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 4px 0;
+}
+
+.employee-email {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin: 0 0 8px 0;
+    word-break: break-all;
+}
+
+.employee-status {
+    display: inline-block;
+}
+
+.employee-actions {
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+/* ==================== Pending Approvals Section ==================== */
+.pending-approvals-section {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.05));
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.pending-approvals-section .section-header {
+    margin-bottom: var(--spacing-md);
+}
+
+.pending-approvals-section .section-header h3 {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.pending-approvals-section .section-header h3 svg {
+    color: var(--color-warning);
+}
+
+.pending-entries-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.pending-entry-card {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    box-shadow: var(--shadow-sm);
+}
+
+.pending-entry-info {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--spacing-sm);
+}
+
+.pending-entry-info span {
+    display: flex;
+    flex-direction: column;
+}
+
+.pending-entry-info span small {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+.pending-entry-info span strong {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+}
+
+.pending-entry-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.btn-approve {
+    background: var(--color-success);
+    color: white;
+    border: none;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-approve:hover {
+    background: var(--color-success-dark, #059669);
+    transform: translateY(-1px);
+}
+
+.btn-decline {
+    background: var(--color-danger);
+    color: white;
+    border: none;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-decline:hover {
+    background: var(--color-danger-dark, #dc2626);
+    transform: translateY(-1px);
+}
+
+/* Admin-only visibility */
+.admin-only {
+    /* By default visible, JS will hide for non-admins */
+    display: block;
+}
+
+/* Form help text */
+.form-help {
+    display: block;
+    margin-top: 4px;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+/* Password Toggle Styles */
+.password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-wrapper input {
+    padding-right: 45px !important;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    transition: color 0.2s ease;
+    z-index: 5;
+}
+
+.password-toggle:hover {
+    color: var(--color-primary);
+}
+
+.password-toggle svg {
+    width: 20px;
+    height: 20px;
+}
+
+.password-toggle .hidden {
+    display: none;
+}
+
 /* ==================== Settings Page ==================== */
 .settings-container {
     display: grid;

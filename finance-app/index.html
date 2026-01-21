@@ -104,6 +104,17 @@
                             <span>Clients</span>
                         </a>
                     </li>
+                    <li class="nav-item admin-only" id="employeesNavItem">
+                        <a href="#employees" class="nav-link" data-page="employees">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                            <span>Employees</span>
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a href="#settings" class="nav-link" data-page="settings">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -369,6 +380,24 @@
                         </button>
                     </div>
 
+                    <!-- Pending Approvals Section (Admin Only) -->
+                    <div class="pending-approvals-section admin-only" id="pendingApprovalsSection">
+                        <div class="section-header">
+                            <h3>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    class="icon-sm">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M12 6v6l4 2" />
+                                </svg>
+                                Pending Approvals
+                                <span class="badge badge-warning" id="pendingCount">0</span>
+                            </h3>
+                        </div>
+                        <div class="pending-entries-list" id="pendingEntriesList">
+                            <!-- Dynamic pending entries -->
+                        </div>
+                    </div>
+
                     <!-- Finance Entries Table -->
                     <div class="entries-table-container">
                         <table class="entries-table">
@@ -381,6 +410,7 @@
                                     <th>Type</th>
                                     <th>Status</th>
                                     <th>Payment Mode</th>
+                                    <th>Created By</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -777,6 +807,25 @@
                     </div>
                 </section>
 
+                <!-- Employees Page (Admin Only) -->
+                <section class="page admin-only" id="employeesPage">
+                    <div class="employees-header">
+                        <h2>Employee Management</h2>
+                        <button class="btn btn-primary" id="addEmployeeBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14" />
+                            </svg>
+                            Add Employee
+                        </button>
+                    </div>
+
+                    <div class="employees-list" id="employeesList">
+                        <!-- Dynamic employee cards -->
+                    </div>
+                </section>
+
+                <!-- Pending Approvals Section (Admin Only) - Shows in entries page -->
+
                 <!-- Settings Page -->
                 <section class="page" id="settingsPage">
                     <div class="settings-container">
@@ -1000,6 +1049,56 @@
         </div>
     </div>
 
+    <!-- Employee Modal (Admin Only) -->
+    <div class="modal-overlay" id="employeeModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="employeeModalTitle">Add Employee</h3>
+                <button class="modal-close" id="closeEmployeeModal" aria-label="Close modal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="employeeForm" class="modal-form">
+                <input type="hidden" id="employeeId">
+                <div class="form-group">
+                    <label for="employeeName">Full Name *</label>
+                    <input type="text" id="employeeName" required placeholder="Enter employee name">
+                </div>
+                <div class="form-group">
+                    <label for="employeeEmail">Email Address *</label>
+                    <input type="email" id="employeeEmail" required placeholder="Enter email address">
+                </div>
+                <div class="form-group" id="employeePasswordGroup">
+                    <label for="employeePassword">Password *</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="employeePassword" placeholder="Minimum 6 characters" minlength="6">
+                        <button type="button" class="password-toggle" onclick="toggleEmployeePassword()"
+                            aria-label="Toggle password visibility">
+                            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            <svg class="eye-off-icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                <line x1="1" y1="1" x2="23" y2="23" />
+                            </svg>
+                        </button>
+                    </div>
+                    <small class="form-help">Employee will use this password to login</small>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelEmployeeBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveEmployeeBtn">Save & Give Access</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
@@ -1012,6 +1111,7 @@
     <script src="js/profile.js"></script>
     <script src="js/invoices.js"></script>
     <script src="js/clients.js"></script>
+    <script src="js/employees.js"></script>
     <script src="js/main.js"></script>
     <script src="js/app.js"></script>
 </body>

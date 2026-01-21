@@ -9,6 +9,7 @@ window.appCurrency = '₹';
 class App {
     constructor() {
         this.currentPage = 'dashboard';
+        this.isAdmin = false;
         this.filters = {
             startDate: '',
             endDate: '',
@@ -80,6 +81,10 @@ class App {
                 console.log('Initializing profile manager...');
                 window.profileManager.init();
             }
+
+            // Setup role-based visibility
+            console.log('Setting up role-based visibility...');
+            await this.setupRoleBasedUI();
 
             // Subscribe to data changes
             dataLayer.subscribe(DATA_STORES.ENTRIES, () => this.onDataChange());
@@ -239,10 +244,16 @@ class App {
             analytics: 'Analytics',
             invoices: 'Invoices',
             clients: 'Clients',
+            employees: 'Employees',
             settings: 'Settings',
             profile: 'My Profile'
         };
         document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
+
+        // Render pending approvals if on entries page and is admin
+        if (page === 'entries' && this.isAdmin) {
+            this.renderPendingApprovals();
+        }
 
         // Show active page
         document.querySelectorAll('.page').forEach(p => {
@@ -594,6 +605,9 @@ class App {
         await this.updateStats();
         await this.renderRecentTransactions();
         await this.renderEntriesTable();
+        if (this.isAdmin) {
+            await this.renderPendingApprovals();
+        }
     }
 
     /**
@@ -670,6 +684,7 @@ class App {
                 <td><span class="badge badge-${entry.type}">${entry.type}</span></td>
                 <td><span class="badge badge-${entry.status}">${entry.status}</span></td>
                 <td>${formatPaymentMode(entry.paymentMode)}</td>
+                <td>${entry.createdByName || '-'}</td>
                 <td>
                     <div class="action-buttons">
                         <button class="action-btn edit" data-id="${entry.id}" title="Edit">
@@ -701,6 +716,136 @@ class App {
                 this.deleteEntry(parseInt(btn.dataset.id));
             });
         });
+    }
+
+    /**
+     * Setup role-based UI visibility
+     */
+    async setupRoleBasedUI() {
+        try {
+            this.isAdmin = await dataLayer.isAdmin();
+
+            // Store role in localStorage for quick access
+            localStorage.setItem('userRole', this.isAdmin ? 'admin' : 'employee');
+
+            // Show/hide admin-only elements
+            document.querySelectorAll('.admin-only').forEach(el => {
+                el.style.display = this.isAdmin ? '' : 'none';
+            });
+
+            // Update profile badge to show role
+            const roleBadge = document.querySelector('.profile-badges .badge-primary');
+            if (roleBadge) {
+                roleBadge.textContent = this.isAdmin ? 'Admin' : 'Employee';
+            }
+
+            console.log(`User role: ${this.isAdmin ? 'Admin' : 'Employee'}`);
+        } catch (error) {
+            console.error('Error setting up role-based UI:', error);
+            // Default to showing admin UI for backward compatibility
+            this.isAdmin = true;
+        }
+    }
+
+    /**
+     * Render pending approvals section (admin only)
+     */
+    async renderPendingApprovals() {
+        if (!this.isAdmin) return;
+
+        const container = document.getElementById('pendingEntriesList');
+        const countBadge = document.getElementById('pendingCount');
+        const section = document.getElementById('pendingApprovalsSection');
+        const currency = window.appCurrency;
+
+        if (!container || !section) return;
+
+        try {
+            const pendingEntries = await dataLayer.getPendingEntries();
+
+            // Update count badge
+            if (countBadge) {
+                countBadge.textContent = pendingEntries.length;
+            }
+
+            // Hide section if no pending entries
+            if (pendingEntries.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+
+            container.innerHTML = pendingEntries.map(entry => `
+                <div class="pending-entry-card" data-id="${entry.id}">
+                    <div class="pending-entry-info">
+                        <span>
+                            <small>Date</small>
+                            <strong>${formatDate(entry.date)}</strong>
+                        </span>
+                        <span>
+                            <small>Client</small>
+                            <strong>${entry.clientName}</strong>
+                        </span>
+                        <span>
+                            <small>Amount</small>
+                            <strong style="color: ${entry.type === 'income' ? 'var(--color-success)' : 'var(--color-danger)'}">
+                                ${entry.type === 'income' ? '+' : '-'}${formatCurrency(entry.amount, currency)}
+                            </strong>
+                        </span>
+                        <span>
+                            <small>Created By</small>
+                            <strong>${entry.createdByName || 'Unknown'}</strong>
+                        </span>
+                        <span>
+                            <small>Description</small>
+                            <strong>${entry.description || '-'}</strong>
+                        </span>
+                    </div>
+                    <div class="pending-entry-actions">
+                        <button class="btn-approve" data-id="${entry.id}" title="Approve">
+                            ✓ Approve
+                        </button>
+                        <button class="btn-decline" data-id="${entry.id}" title="Decline">
+                            ✕ Decline
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Bind approve/decline buttons
+            container.querySelectorAll('.btn-approve').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.dataset.id;
+                    try {
+                        await dataLayer.approveEntry(id);
+                        showToast('Entry approved successfully', 'success');
+                        await this.renderPendingApprovals();
+                        await this.refreshData();
+                    } catch (error) {
+                        console.error('Error approving entry:', error);
+                        showToast('Failed to approve entry', 'error');
+                    }
+                });
+            });
+
+            container.querySelectorAll('.btn-decline').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.dataset.id;
+                    if (!confirm('Are you sure you want to decline this entry?')) return;
+                    try {
+                        await dataLayer.declineEntry(id);
+                        showToast('Entry declined', 'info');
+                        await this.renderPendingApprovals();
+                    } catch (error) {
+                        console.error('Error declining entry:', error);
+                        showToast('Failed to decline entry', 'error');
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Error rendering pending approvals:', error);
+        }
     }
 }
 
