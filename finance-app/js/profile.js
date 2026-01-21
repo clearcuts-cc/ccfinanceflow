@@ -1,5 +1,6 @@
 /**
  * Profile Manager - Handles Profile Page Logic
+ * Using Supabase Auth and Database
  */
 class ProfileManager {
     constructor() {
@@ -30,7 +31,7 @@ class ProfileManager {
         this.loadFromLocalStorage();
         this.updateHeaderAvatar();
 
-        // Then fetch fresh data from API
+        // Then fetch fresh data from Supabase
         await this.loadCurrentUser();
     }
 
@@ -49,18 +50,42 @@ class ProfileManager {
     }
 
     /**
-     * Load current user data from API
+     * Load current user data from Supabase
      */
     async loadCurrentUser() {
         try {
-            const response = await dataLayer._request('/auth/me');
-            // Handle different API response formats
-            this.currentUser = response.user || response.data || response;
+            // Get authenticated user from Supabase Auth
+            const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+
+            if (authError || !user) {
+                console.warn('Not authenticated:', authError);
+                return;
+            }
+
+            // Get user profile from users table
+            const { data: profile, error: profileError } = await supabaseClient
+                .from('users')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (profileError) {
+                console.warn('Could not fetch user profile:', profileError);
+            }
+
+            // Merge auth user with profile data
+            this.currentUser = {
+                id: user.id,
+                email: user.email,
+                name: profile?.name || user.user_metadata?.name || 'User',
+                avatar: profile?.avatar || null,
+                phone: profile?.phone || null,
+                role: profile?.role || 'user',
+                created_at: user.created_at
+            };
 
             // Update localStorage with fresh data
-            if (this.currentUser) {
-                localStorage.setItem('user', JSON.stringify(this.currentUser));
-            }
+            localStorage.setItem('user', JSON.stringify(this.currentUser));
 
             this.updateHeaderAvatar();
 
@@ -70,8 +95,7 @@ class ProfileManager {
                 this.renderProfilePage();
             }
         } catch (error) {
-            console.warn('Failed to load user data from API, using localStorage:', error);
-            // Still update UI with localStorage data
+            console.warn('Failed to load user data from Supabase, using localStorage:', error);
             this.updateHeaderAvatar();
         }
     }
@@ -95,9 +119,7 @@ class ProfileManager {
      */
     renderProfilePage() {
         if (!this.currentUser) {
-            // Try loading from localStorage first
             this.loadFromLocalStorage();
-            // If still missing, fetch from API
             if (!this.currentUser) {
                 this.loadCurrentUser();
                 return;
@@ -166,7 +188,6 @@ class ProfileManager {
         const reader = new FileReader();
         reader.onload = (event) => {
             this.avatarBase64 = event.target.result;
-            // Optimistic update
             this.renderPageAvatar(this.avatarBase64, document.getElementById('pageProfileName').value);
         };
         reader.readAsDataURL(file);
@@ -189,55 +210,79 @@ class ProfileManager {
         }
 
         try {
-            // BACKEND LIMITATION: Sending large Base64 images often causes 413 or 500 API errors.
-            // For now, we only update text fields. Avatar upload requires a dedicated endpoint or cloud storage.
-
-            if (this.avatarBase64) {
-                showToast('Note: Avatar update temporarily disabled to prevent server errors.', 'info');
-            }
-
-            const payload = {
-                name,
-                email,
-                phone,
-                // avatar: this.avatarBase64, // DISABLED: Prevents Payload Too Large / Internal Server Error
-                currentPassword: currentPassword || undefined,
-                newPassword: newPassword || undefined
-            };
-
             showToast('Updating profile...', 'info');
 
-            const result = await dataLayer._request('/auth/profile', {
-                method: 'PUT',
-                body: payload
-            });
-
-            if (result.success) {
-                showToast('Profile updated successfully', 'success');
-
-                if (result.user) {
-                    // Update Local State merge with existing in case backend didn't return everything
-                    this.currentUser = { ...this.currentUser, ...result.user };
-
-                    // If we had a local avatar preview, keep it in UI even if not saved to backend yet
-                    if (this.avatarBase64) {
-                        this.currentUser.avatar = this.avatarBase64;
-                    }
-
-                    localStorage.setItem('user', JSON.stringify(this.currentUser));
-
-                    // Update UI
-                    this.updateHeaderAvatar();
-                    this.renderProfilePage();
-
-                    // Clear password fields
-                    document.getElementById('pageCurrentPassword').value = '';
-                    document.getElementById('pageNewPassword').value = '';
-                    this.avatarBase64 = null;
-                }
-            } else {
-                showToast(result.message || 'Update failed', 'error');
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) {
+                showToast('Not authenticated', 'error');
+                return;
             }
+
+            // Update user profile in users table
+            const updateData = { name, phone };
+
+            // Note: Avatar upload to Supabase storage would require additional setup
+            // For now, we skip avatar updates to avoid payload issues
+            if (this.avatarBase64) {
+                showToast('Note: Avatar update temporarily disabled.', 'info');
+            }
+
+            const { error: updateError } = await supabaseClient
+                .from('users')
+                .update(updateData)
+                .eq('id', user.id);
+
+            if (updateError) {
+                throw updateError;
+            }
+
+            // Update password if provided
+            if (newPassword && currentPassword) {
+                // First verify current password by re-authenticating
+                const { error: signInError } = await supabaseClient.auth.signInWithPassword({
+                    email: this.currentUser.email,
+                    password: currentPassword
+                });
+
+                if (signInError) {
+                    showToast('Current password is incorrect', 'error');
+                    return;
+                }
+
+                // Now update to new password
+                const { error: passwordError } = await supabaseClient.auth.updateUser({
+                    password: newPassword
+                });
+
+                if (passwordError) {
+                    showToast('Failed to update password: ' + passwordError.message, 'error');
+                    return;
+                }
+
+                showToast('Password updated successfully', 'success');
+            }
+
+            showToast('Profile updated successfully', 'success');
+
+            // Update local state
+            this.currentUser = { ...this.currentUser, name, phone };
+
+            // Keep local avatar preview
+            if (this.avatarBase64) {
+                this.currentUser.avatar = this.avatarBase64;
+            }
+
+            localStorage.setItem('user', JSON.stringify(this.currentUser));
+
+            // Update UI
+            this.updateHeaderAvatar();
+            this.renderProfilePage();
+
+            // Clear password fields
+            document.getElementById('pageCurrentPassword').value = '';
+            document.getElementById('pageNewPassword').value = '';
+            this.avatarBase64 = null;
+
         } catch (error) {
             console.error('Profile Update Error:', error);
             showToast(error.message || 'Failed to update profile', 'error');

@@ -25,8 +25,9 @@ class App {
      * Initialize the application
      */
     async init() {
-        // Check Authentication
-        if (!localStorage.getItem('token')) {
+        // Check Authentication using Supabase session
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) {
             window.location.href = 'login.html';
             return;
         }
@@ -269,9 +270,9 @@ class App {
      */
     bindEvents() {
         // Logout
-        document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+        document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
             e.preventDefault();
-            localStorage.removeItem('token');
+            await supabaseClient.auth.signOut();
             localStorage.removeItem('user');
             window.location.href = 'login.html';
         });

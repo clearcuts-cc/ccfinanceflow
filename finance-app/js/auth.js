@@ -1,7 +1,7 @@
 /**
  * Authentication Logic for FinanceFlow
+ * Using Supabase Auth - Direct Connection
  */
-const API_BASE = `${CONFIG.API_BASE_URL}/api/auth`;
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
@@ -18,6 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function hideError() {
+        if (errorDiv) {
+            errorDiv.style.display = 'none';
+        }
+    }
+
     function setLoading(isLoading) {
         if (submitBtn) {
             submitBtn.disabled = isLoading;
@@ -25,134 +31,107 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // LOGIN
-    if (loginForm) {
-        // Redirect if already logged in
-        if (localStorage.getItem('token')) {
+    // Check if already logged in
+    async function checkSession() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
             window.location.href = 'index.html';
         }
+    }
 
-        const otpModal = document.getElementById('otpModal');
-        const otpForm = document.getElementById('otpForm');
-        let tempEmail = '';
-        let tempPassword = '';
+    // LOGIN
+    if (loginForm) {
+        checkSession();
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            hideError();
             setLoading(true);
+
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
             try {
-                const res = await fetch(`${API_BASE}/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email,
+                    password
                 });
-                const data = await res.json();
 
-                if (res.status === 202 || data.requiresOtp) {
-                    // OTP REQUIRED FLOW
-                    // Store credentials temporarily (or use a session token if backend provides one)
-                    tempEmail = email;
-                    tempPassword = password;
-
-                    if (otpModal) {
-                        otpModal.classList.add('active');
-                        setLoading(false); // Reset login button
+                if (error) {
+                    if (error.message.includes('Email not confirmed')) {
+                        showError('Please verify your email before logging in. Check your inbox for the verification link.');
                     } else {
-                        showError('Partial login success, but OTP modal is missing.');
+                        showError(error.message || 'Login failed');
                     }
-                } else if (data.success) {
-                    // STANDARD LOGIN SUCCESS
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    window.location.href = 'index.html';
-                } else {
-                    showError(data.error?.message || data.message || 'Login failed');
                     setLoading(false);
+                    return;
+                }
+
+                if (data.session) {
+                    // Store user info in localStorage for quick access
+                    const userProfile = await getUserProfile(data.user.id);
+                    localStorage.setItem('user', JSON.stringify({
+                        id: data.user.id,
+                        email: data.user.email,
+                        name: data.user.user_metadata?.name || userProfile?.name || 'User',
+                        avatar: userProfile?.avatar || null,
+                        phone: userProfile?.phone || null,
+                        created_at: data.user.created_at
+                    }));
+
+                    window.location.href = 'index.html';
                 }
             } catch (err) {
-                console.error(err);
+                console.error('Login error:', err);
                 showError('Network error. Please check your connection.');
                 setLoading(false);
             }
         });
-
-        // HANDLE OTP SUBMISSION
-        if (otpForm) {
-            otpForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const otpBtn = document.getElementById('verifyOtpBtn');
-                if (otpBtn) {
-                    otpBtn.disabled = true;
-                    otpBtn.textContent = 'Verifying...';
-                }
-
-                const otpCode = document.getElementById('otpCode').value;
-
-                try {
-                    const res = await fetch(`${API_BASE}/verify-otp`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email: tempEmail,
-                            otp: otpCode
-                        })
-                        // Note: Realistically often we send a temporary session token instead of email again
-                    });
-                    const data = await res.json();
-
-                    if (data.success) {
-                        localStorage.setItem('token', data.token);
-                        localStorage.setItem('user', JSON.stringify(data.user));
-                        window.location.href = 'index.html';
-                    } else {
-                        alert(data.message || 'Invalid Code');
-                        if (otpBtn) {
-                            otpBtn.disabled = false;
-                            otpBtn.textContent = 'Verify & Login';
-                        }
-                    }
-                } catch (err) {
-                    console.error(err);
-                    alert('Network Error');
-                    if (otpBtn) {
-                        otpBtn.disabled = false;
-                        otpBtn.textContent = 'Verify & Login';
-                    }
-                }
-            });
-        }
     }
 
     // SIGNUP
     if (signupForm) {
-        // Redirect if already logged in
-        if (localStorage.getItem('token')) {
-            window.location.href = 'index.html';
-        }
+        checkSession();
 
         const verificationModal = document.getElementById('verificationModal');
 
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            hideError();
             setLoading(true);
+
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
             try {
-                const res = await fetch(`${API_BASE}/signup`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password })
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            name: name
+                        }
+                    }
                 });
-                const data = await res.json();
 
-                if (data.success) {
-                    // EMAIL VERIFICATION FLOW
-                    // Instead of auto-login, show verification modal
+                if (error) {
+                    showError(error.message || 'Signup failed');
+                    setLoading(false);
+                    return;
+                }
+
+                if (data.user) {
+                    // Create user profile in users table
+                    await supabaseClient.from('users').insert({
+                        id: data.user.id,
+                        name: name,
+                        email: email,
+                        role: 'user',
+                        is_verified: false
+                    });
+
+                    // Show verification modal
                     if (verificationModal) {
                         verificationModal.classList.add('active');
                         signupForm.reset();
@@ -161,12 +140,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         alert('Signup successful! Please check your email to verify your account.');
                         window.location.href = 'login.html';
                     }
-                } else {
-                    showError(data.error?.message || data.message || 'Signup failed');
-                    setLoading(false);
                 }
             } catch (err) {
-                console.error(err);
+                console.error('Signup error:', err);
                 showError('Network error. Please check your connection.');
                 setLoading(false);
             }
@@ -208,23 +184,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 try {
-                    // Call Backend API
-                    const res = await fetch(`${API_BASE}/forgot-password`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: resetEmail })
+                    const { error } = await supabaseClient.auth.resetPasswordForEmail(resetEmail, {
+                        redirectTo: window.location.origin + '/login.html'
                     });
 
-                    const data = await res.json();
-
-                    // For security, often we show success even if email not found, 
-                    // but here we'll display what the backend returns or a generic success.
-                    alert(data.message || 'If an account exists with this email, a reset link has been sent.');
-                    forgotModal.classList.remove('active');
-                    forgotForm.reset();
-
+                    if (error) {
+                        alert(error.message);
+                    } else {
+                        alert('Password reset link sent! Check your email.');
+                        forgotModal.classList.remove('active');
+                        forgotForm.reset();
+                    }
                 } catch (err) {
-                    console.error(err);
+                    console.error('Reset password error:', err);
                     alert('Network error. Please try again.');
                 } finally {
                     if (sendResetBtn) {
@@ -233,6 +205,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             });
+        }
+    }
+
+    // Helper function to get user profile from database
+    async function getUserProfile(userId) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('users')
+                .select('name, avatar, phone')
+                .eq('id', userId)
+                .single();
+
+            if (error) {
+                console.warn('Could not fetch user profile:', error);
+                return null;
+            }
+            return data;
+        } catch (err) {
+            console.warn('Error fetching user profile:', err);
+            return null;
         }
     }
 });

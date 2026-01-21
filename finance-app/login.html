@@ -12,6 +12,7 @@
         rel="stylesheet">
     <!-- Main Stylesheet (for variables) -->
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/auth-styles.css">
     <style>
         * {
             margin: 0;
@@ -806,7 +807,7 @@
     </style>
 </head>
 
-<body>
+<body data-theme="dark">
     <!-- Animated Background -->
     <div class="animated-bg">
         <!-- Aurora Wave -->
@@ -957,8 +958,9 @@
         </div>
     </div>
 
-    <!-- Auth Logic -->
-    <script src="js/config.js"></script>
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
     <script src="js/theme.js"></script>
     <script>
         // Initialize theme independent of main app

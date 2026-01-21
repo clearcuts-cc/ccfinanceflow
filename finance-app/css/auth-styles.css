@@ -1,0 +1,589 @@
+/* =====================================================
+   FinanceFlow - Auth Pages Stylesheet
+   Premium Dark Mode & Responsive Login/Signup
+   ===================================================== */
+
+/* ==================== Auth Card Styles ==================== */
+.auth-card {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 420px;
+    margin: 20px;
+    padding: 40px;
+    background: var(--color-bg-card);
+    border-radius: 24px;
+    box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--color-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+/* Dark mode card enhancement */
+[data-theme="dark"] .auth-card {
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        0 0 80px rgba(99, 102, 241, 0.06);
+}
+
+/* ==================== Auth Header ==================== */
+.auth-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.auth-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.auth-logo svg {
+    width: 48px;
+    height: 48px;
+    padding: 10px;
+    background: var(--gradient-primary);
+    border-radius: 16px;
+    color: white;
+}
+
+.auth-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.02em;
+}
+
+.auth-subtitle {
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+    margin-top: 4px;
+    line-height: 1.5;
+}
+
+/* ==================== Form Styles ==================== */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.01em;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 1rem;
+    border: 2px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    transition: all 0.25s ease;
+    outline: none;
+}
+
+.form-group input::placeholder {
+    color: var(--color-text-muted);
+}
+
+.form-group input:focus {
+    border-color: var(--color-primary);
+    background: var(--color-bg-secondary);
+    box-shadow: 0 0 0 4px var(--color-primary-light);
+}
+
+/* Dark mode input enhancement */
+[data-theme="dark"] .form-group input {
+    background: rgba(51, 65, 85, 0.5);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .form-group input:focus {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: var(--color-primary);
+}
+
+/* ==================== Buttons ==================== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: var(--gradient-primary);
+    color: white;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-full {
+    width: 100%;
+}
+
+/* ==================== Error Message ==================== */
+.error-message {
+    display: none;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    background: var(--color-danger-light);
+    border: 1px solid var(--color-danger);
+    border-radius: 12px;
+    color: var(--color-danger);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: center;
+    animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+/* ==================== Auth Footer ==================== */
+.auth-footer {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+.auth-footer a {
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.auth-footer a:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
+}
+
+/* ==================== Modal Styles ==================== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal {
+    background: var(--color-bg-card);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--color-border);
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.active .modal {
+    transform: scale(1) translateY(0);
+}
+
+[data-theme="dark"] .modal {
+    background: var(--color-bg-secondary);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.modal-header h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.modal-close {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.modal-close:hover {
+    background: var(--color-danger-light);
+    color: var(--color-danger);
+}
+
+.modal-close svg {
+    width: 18px;
+    height: 18px;
+}
+
+.modal-form {
+    padding: 24px;
+}
+
+.modal-actions {
+    margin-top: 20px;
+}
+
+/* ==================== Theme Toggle for Auth ==================== */
+.auth-theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.auth-theme-toggle:hover {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    transform: rotate(15deg);
+}
+
+.auth-theme-toggle svg {
+    width: 22px;
+    height: 22px;
+}
+
+.auth-theme-toggle .sun-icon {
+    display: block;
+}
+
+.auth-theme-toggle .moon-icon {
+    display: none;
+}
+
+[data-theme="dark"] .auth-theme-toggle .sun-icon {
+    display: none;
+}
+
+[data-theme="dark"] .auth-theme-toggle .moon-icon {
+    display: block;
+}
+
+[data-theme="dark"] .auth-theme-toggle {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ==================== Responsive Styles ==================== */
+
+/* Tablet */
+@media (max-width: 768px) {
+    .auth-card {
+        max-width: 100%;
+        margin: 16px;
+        padding: 32px 24px;
+        border-radius: 20px;
+    }
+
+    .auth-title {
+        font-size: 1.5rem;
+    }
+
+    .auth-subtitle {
+        font-size: 0.9rem;
+    }
+
+    .form-group input {
+        padding: 12px 14px;
+        font-size: 16px;
+        /* Prevents iOS zoom */
+    }
+
+    .btn {
+        padding: 12px 20px;
+    }
+
+    .auth-theme-toggle {
+        width: 44px;
+        height: 44px;
+        top: 16px;
+        right: 16px;
+    }
+
+    /* Reduce background animations on mobile */
+    .orb {
+        filter: blur(100px);
+        opacity: 0.4;
+    }
+
+    .orb-1 {
+        width: 200px;
+        height: 200px;
+    }
+
+    .orb-2 {
+        width: 180px;
+        height: 180px;
+    }
+
+    .orb-3,
+    .orb-4 {
+        width: 120px;
+        height: 120px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    body {
+        overflow-y: auto;
+        min-height: 100vh;
+        padding: 16px 0;
+    }
+
+    .auth-card {
+        margin: 12px;
+        padding: 28px 20px;
+        border-radius: 16px;
+    }
+
+    .auth-logo svg {
+        width: 42px;
+        height: 42px;
+    }
+
+    .auth-title {
+        font-size: 1.35rem;
+    }
+
+    .auth-subtitle {
+        font-size: 0.85rem;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        font-size: 0.8rem;
+    }
+
+    .form-group input {
+        padding: 12px;
+        border-radius: 10px;
+    }
+
+    .btn {
+        padding: 14px 16px;
+        font-size: 0.95rem;
+        border-radius: 10px;
+    }
+
+    .auth-footer {
+        font-size: 0.85rem;
+        margin-top: 20px;
+        padding-top: 16px;
+    }
+
+    .modal {
+        margin: 12px;
+        border-radius: 16px;
+    }
+
+    .modal-header {
+        padding: 16px 20px;
+    }
+
+    .modal-form {
+        padding: 20px;
+    }
+
+    /* Hide complex animations on small screens */
+    .shape,
+    .pulse-ring,
+    .glow-line,
+    .shooting-star {
+        display: none;
+    }
+
+    .particles .particle {
+        opacity: 0.3;
+    }
+
+    .auth-theme-toggle {
+        width: 40px;
+        height: 40px;
+        top: 12px;
+        right: 12px;
+        border-radius: 12px;
+    }
+
+    .auth-theme-toggle svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+    .auth-card {
+        padding: 24px 16px;
+        margin: 8px;
+    }
+
+    .auth-title {
+        font-size: 1.25rem;
+    }
+
+    .btn {
+        padding: 12px;
+    }
+}
+
+/* ==================== Dark Mode Background Enhancements ==================== */
+[data-theme="dark"] .gradient-mesh {
+    background:
+        radial-gradient(ellipse at 20% 80%, rgba(99, 102, 241, 0.2) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 40% 40%, rgba(16, 185, 129, 0.1) 0%, transparent 40%);
+}
+
+[data-theme="dark"] .orb-1 {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.4));
+}
+
+[data-theme="dark"] .orb-2 {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.4), rgba(6, 182, 212, 0.35));
+}
+
+[data-theme="dark"] .orb-3 {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(239, 68, 68, 0.3));
+}
+
+[data-theme="dark"] .orb-4 {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.35), rgba(167, 139, 250, 0.3));
+}
+
+[data-theme="dark"] .grid-pattern {
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+}
+
+[data-theme="dark"] .aurora {
+    background: linear-gradient(90deg,
+            rgba(99, 102, 241, 0) 0%,
+            rgba(99, 102, 241, 0.08) 20%,
+            rgba(139, 92, 246, 0.12) 40%,
+            rgba(16, 185, 129, 0.08) 60%,
+            rgba(6, 182, 212, 0.1) 80%,
+            rgba(99, 102, 241, 0) 100%);
+}
+
+/* ==================== Accessibility ==================== */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .orb,
+    .shape,
+    .pulse-ring,
+    .particle,
+    .shooting-star,
+    .glow-line,
+    .dot {
+        animation: none !important;
+    }
+}
+
+/* Focus styles for accessibility */
+.form-group input:focus-visible,
+.btn:focus-visible,
+.auth-theme-toggle:focus-visible,
+.modal-close:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}

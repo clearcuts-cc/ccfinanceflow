@@ -1,10 +1,80 @@
 /**
- * FinanceFlow - API Data Layer
- * Handles all data operations via REST API
- * Drop-in replacement for the IndexedDB-based data.js
+ * FinanceFlow - Supabase Data Layer
+ * Direct connection to Supabase - No backend required
  */
 
-const API_BASE = `${CONFIG.API_BASE_URL}/api`;
+// Helper functions to convert between JS camelCase and database snake_case
+const toDbEntry = (entry) => ({
+    date: entry.date,
+    client_name: entry.clientName,
+    description: entry.description,
+    amount: entry.amount,
+    type: entry.type,
+    status: entry.status,
+    payment_mode: entry.paymentMode
+});
+
+const fromDbEntry = (row) => ({
+    id: row.id,
+    date: row.date,
+    clientName: row.client_name,
+    description: row.description,
+    amount: row.amount,
+    type: row.type,
+    status: row.status,
+    paymentMode: row.payment_mode,
+    userId: row.user_id,
+    createdAt: row.created_at
+});
+
+const toDbInvoice = (invoice) => ({
+    invoice_number: invoice.invoiceNumber,
+    invoice_date: invoice.invoiceDate,
+    due_date: invoice.dueDate,
+    client_name: invoice.clientName,
+    client_address: invoice.clientAddress,
+    client_phone: invoice.clientPhone,
+    agency_name: invoice.agencyName,
+    agency_contact: invoice.agencyContact,
+    agency_address: invoice.agencyAddress,
+    agency_logo: invoice.agencyLogo,
+    subtotal: invoice.subtotal,
+    tax_percent: invoice.taxPercent,
+    tax_amount: invoice.taxAmount,
+    discount_percent: invoice.discountPercent,
+    discount_amount: invoice.discountAmount,
+    grand_total: invoice.grandTotal,
+    payment_status: invoice.paymentStatus
+});
+
+const fromDbInvoice = (row) => ({
+    id: row.id,
+    invoiceNumber: row.invoice_number,
+    invoiceDate: row.invoice_date,
+    dueDate: row.due_date,
+    clientName: row.client_name,
+    clientAddress: row.client_address,
+    clientPhone: row.client_phone,
+    agencyName: row.agency_name,
+    agencyContact: row.agency_contact,
+    agencyAddress: row.agency_address,
+    agencyLogo: row.agency_logo,
+    subtotal: row.subtotal,
+    taxPercent: row.tax_percent,
+    taxAmount: row.tax_amount,
+    discountPercent: row.discount_percent,
+    discountAmount: row.discount_amount,
+    grandTotal: row.grand_total,
+    paymentStatus: row.payment_status,
+    services: row.invoice_services?.map(s => ({
+        id: s.id,
+        name: s.name,
+        quantity: s.quantity,
+        rate: s.rate,
+        amount: s.amount
+    })) || [],
+    createdAt: row.created_at
+});
 
 class DataLayerAPI {
     constructor() {
@@ -12,68 +82,45 @@ class DataLayerAPI {
     }
 
     /**
-     * Initialize the data layer (no-op for API, kept for compatibility)
+     * Initialize the data layer
      */
     async init() {
-        console.log('DataLayerAPI initialized');
+        console.log('Supabase DataLayer initialized');
+
+        // Check authentication status
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) {
+            const isAuthPage = window.location.pathname.includes('login.html') ||
+                window.location.pathname.includes('signup.html');
+            if (!isAuthPage) {
+                console.warn('No active session, redirecting to login');
+                window.location.href = 'login.html';
+                return;
+            }
+        }
+
         return Promise.resolve();
     }
 
     /**
-     * Make an API request
+     * Get current user ID
      */
+    async getCurrentUserId() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        return session?.user?.id || null;
+    }
+
     /**
-     * Make an API request
+     * Handle Supabase errors
      */
-    async _request(endpoint, options = {}) {
-        const url = `${API_BASE}${endpoint}`;
-
-        // Get JWT token
-        const token = localStorage.getItem('token');
-
-        const config = {
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                ...options.headers
-            }
-        };
-
-        // Only stringify if body is an object and not already a string
-        if (config.body && typeof config.body === 'object') {
-            config.body = JSON.stringify(config.body);
+    handleError(error, context = 'Operation') {
+        console.error(`${context} error:`, error);
+        if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+            // Auth error - redirect to login
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
         }
-
-        try {
-            console.log(`API Request: ${config.method || 'GET'} ${url}`);
-            const response = await fetch(url, config);
-
-            // Handle Unauthorized Access (401)
-            if (response.status === 401 || response.status === 403) {
-                // If not already on auth pages, redirect to login
-                const isAuthPage = window.location.pathname.includes('login.html') || window.location.pathname.includes('signup.html');
-                if (!isAuthPage) {
-                    console.warn('Unauthorized access, redirecting to login');
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    window.location.href = 'login.html';
-                    return null;
-                }
-            }
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                console.error('API Error Response:', data);
-                throw new Error(data.error?.message || 'API request failed');
-            }
-
-            return data.data || data; // Handle responses wrapped in 'data' or direct (like Auth)
-        } catch (error) {
-            console.error('API Error:', error);
-            throw error;
-        }
+        throw new Error(error.message || `${context} failed`);
     }
 
     /**
@@ -102,164 +149,415 @@ class DataLayerAPI {
     // ==================== Finance Entries ====================
 
     async addEntry(entry) {
-        const result = await this._request('/entries', {
-            method: 'POST',
-            body: entry
-        });
+        const userId = await this.getCurrentUserId();
+        const dbEntry = toDbEntry(entry);
+        const { data, error } = await supabaseClient
+            .from('finance_entries')
+            .insert({ ...dbEntry, user_id: userId })
+            .select()
+            .single();
+
+        if (error) this.handleError(error, 'Add entry');
         this.notifyListeners(DATA_STORES.ENTRIES);
-        return result;
+        return fromDbEntry(data);
     }
 
     async updateEntry(id, entry) {
-        const result = await this._request(`/entries/${id}`, {
-            method: 'PUT',
-            body: entry
-        });
+        const dbEntry = toDbEntry(entry);
+        const { data, error } = await supabaseClient
+            .from('finance_entries')
+            .update(dbEntry)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) this.handleError(error, 'Update entry');
         this.notifyListeners(DATA_STORES.ENTRIES);
-        return result;
+        return fromDbEntry(data);
     }
 
     async deleteEntry(id) {
-        await this._request(`/entries/${id}`, { method: 'DELETE' });
+        const { error } = await supabaseClient
+            .from('finance_entries')
+            .delete()
+            .eq('id', id);
+
+        if (error) this.handleError(error, 'Delete entry');
         this.notifyListeners(DATA_STORES.ENTRIES);
         return true;
     }
 
     async getEntry(id) {
-        return this._request(`/entries/${id}`);
+        const { data, error } = await supabaseClient
+            .from('finance_entries')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) this.handleError(error, 'Get entry');
+        return fromDbEntry(data);
     }
 
     async getAllEntries() {
-        return this._request('/entries');
+        const { data, error } = await supabaseClient
+            .from('finance_entries')
+            .select('*')
+            .order('date', { ascending: false });
+
+        if (error) this.handleError(error, 'Get all entries');
+        return (data || []).map(fromDbEntry);
     }
 
     async getFilteredEntries(filters = {}) {
-        const params = new URLSearchParams();
+        let query = supabaseClient.from('finance_entries').select('*');
 
-        if (filters.startDate) params.append('startDate', filters.startDate);
-        if (filters.endDate) params.append('endDate', filters.endDate);
-        if (filters.month !== '' && filters.month !== undefined) params.append('month', filters.month);
-        if (filters.year) params.append('year', filters.year);
-        if (filters.type) params.append('type', filters.type);
-        if (filters.status) params.append('status', filters.status);
-        if (filters.paymentMode) params.append('paymentMode', filters.paymentMode);
-        if (filters.search) params.append('search', filters.search);
+        if (filters.startDate) {
+            query = query.gte('date', filters.startDate);
+        }
+        if (filters.endDate) {
+            query = query.lte('date', filters.endDate);
+        }
+        if (filters.type) {
+            query = query.eq('type', filters.type);
+        }
+        if (filters.status) {
+            query = query.eq('status', filters.status);
+        }
+        if (filters.paymentMode) {
+            query = query.eq('payment_mode', filters.paymentMode);
+        }
+        if (filters.search) {
+            query = query.or(`client_name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+        }
 
-        const queryString = params.toString();
-        return this._request(`/entries${queryString ? `?${queryString}` : ''}`);
+        // Handle month/year filtering
+        if (filters.month !== '' && filters.month !== undefined && filters.year) {
+            const month = parseInt(filters.month) + 1; // JS months are 0-indexed
+            const year = parseInt(filters.year);
+            const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+            const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+            query = query.gte('date', startDate).lte('date', endDate);
+        } else if (filters.year) {
+            query = query.gte('date', `${filters.year}-01-01`).lte('date', `${filters.year}-12-31`);
+        }
+
+        query = query.order('date', { ascending: false });
+
+        const { data, error } = await query;
+        if (error) this.handleError(error, 'Filter entries');
+        return (data || []).map(fromDbEntry);
     }
 
     async getFinancialSummary(filters = {}) {
-        const params = new URLSearchParams();
+        const entries = await this.getFilteredEntries(filters);
 
-        if (filters.startDate) params.append('startDate', filters.startDate);
-        if (filters.endDate) params.append('endDate', filters.endDate);
-        if (filters.month !== '' && filters.month !== undefined) params.append('month', filters.month);
-        if (filters.year) params.append('year', filters.year);
-        if (filters.type) params.append('type', filters.type);
-        if (filters.status) params.append('status', filters.status);
-        if (filters.paymentMode) params.append('paymentMode', filters.paymentMode);
+        let totalIncome = 0;
+        let totalExpense = 0;
+        let pendingAmount = 0;
+        let receivedAmount = 0;
 
-        const queryString = params.toString();
-        return this._request(`/analytics/financial-summary${queryString ? `?${queryString}` : ''}`);
+        entries.forEach(entry => {
+            const amount = parseFloat(entry.amount) || 0;
+            if (entry.type === 'income') {
+                totalIncome += amount;
+            } else {
+                totalExpense += amount;
+            }
+            if (entry.status === 'pending') {
+                pendingAmount += amount;
+            } else {
+                receivedAmount += amount;
+            }
+        });
+
+        return {
+            totalIncome,
+            totalExpense,
+            pendingAmount,
+            receivedAmount,
+            netBalance: totalIncome - totalExpense
+        };
     }
 
     async getMonthlyData(year) {
-        return this._request(`/analytics/monthly/${year}`);
+        const { data, error } = await supabaseClient
+            .from('finance_entries')
+            .select('*')
+            .gte('date', `${year}-01-01`)
+            .lte('date', `${year}-12-31`);
+
+        if (error) this.handleError(error, 'Get monthly data');
+
+        // Aggregate by month
+        const monthlyData = Array(12).fill(null).map(() => ({ income: 0, expense: 0 }));
+
+        (data || []).forEach(entry => {
+            const month = new Date(entry.date).getMonth();
+            const amount = parseFloat(entry.amount) || 0;
+            if (entry.type === 'income') {
+                monthlyData[month].income += amount;
+            } else {
+                monthlyData[month].expense += amount;
+            }
+        });
+
+        return monthlyData;
     }
 
     async getPaymentModeDistribution() {
-        return this._request('/analytics/payment-modes');
+        const entries = await this.getAllEntries();
+        const distribution = {};
+
+        entries.forEach(entry => {
+            const mode = entry.payment_mode || 'unknown';
+            const amount = parseFloat(entry.amount) || 0;
+            distribution[mode] = (distribution[mode] || 0) + amount;
+        });
+
+        return distribution;
     }
 
     async getStatusDistribution() {
-        return this._request('/analytics/status-distribution');
+        const entries = await this.getAllEntries();
+        let pending = 0;
+        let received = 0;
+
+        entries.forEach(entry => {
+            const amount = parseFloat(entry.amount) || 0;
+            if (entry.status === 'pending') {
+                pending += amount;
+            } else {
+                received += amount;
+            }
+        });
+
+        return { pending, received };
     }
 
     async getYearlyRevenue() {
-        return this._request('/analytics/yearly-revenue');
+        const entries = await this.getAllEntries();
+        const yearlyData = {};
+
+        entries.forEach(entry => {
+            const year = new Date(entry.date).getFullYear();
+            const amount = parseFloat(entry.amount) || 0;
+            if (!yearlyData[year]) {
+                yearlyData[year] = { income: 0, expense: 0 };
+            }
+            if (entry.type === 'income') {
+                yearlyData[year].income += amount;
+            } else {
+                yearlyData[year].expense += amount;
+            }
+        });
+
+        return yearlyData;
     }
 
     // ==================== Invoices ====================
 
     async addInvoice(invoice) {
-        const result = await this._request('/invoices', {
-            method: 'POST',
-            body: invoice
-        });
+        const userId = await this.getCurrentUserId();
+        const { services, ...invoiceData } = invoice;
+        const dbInvoice = toDbInvoice(invoiceData);
+
+        // Insert invoice
+        const { data: invoiceResult, error: invoiceError } = await supabaseClient
+            .from('invoices')
+            .insert({ ...dbInvoice, user_id: userId })
+            .select()
+            .single();
+
+        if (invoiceError) this.handleError(invoiceError, 'Add invoice');
+
+        // Insert services if present
+        if (services && services.length > 0) {
+            const servicesWithInvoiceId = services.map(s => ({
+                name: s.name,
+                quantity: s.quantity,
+                rate: s.rate,
+                amount: s.amount,
+                invoice_id: invoiceResult.id
+            }));
+
+            const { error: servicesError } = await supabaseClient
+                .from('invoice_services')
+                .insert(servicesWithInvoiceId);
+
+            if (servicesError) {
+                console.warn('Error inserting services:', servicesError);
+            }
+        }
+
         this.notifyListeners(DATA_STORES.INVOICES);
-        return result;
+        return fromDbInvoice({ ...invoiceResult, invoice_services: services || [] });
     }
 
     async updateInvoice(id, invoice) {
-        const result = await this._request(`/invoices/${id}`, {
-            method: 'PUT',
-            body: invoice
-        });
+        const { services, ...invoiceData } = invoice;
+        const dbInvoice = toDbInvoice(invoiceData);
+
+        const { data, error } = await supabaseClient
+            .from('invoices')
+            .update(dbInvoice)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) this.handleError(error, 'Update invoice');
+
+        // Update services if provided
+        if (services) {
+            // Delete existing services
+            await supabaseClient.from('invoice_services').delete().eq('invoice_id', id);
+
+            // Insert new services
+            if (services.length > 0) {
+                const servicesWithInvoiceId = services.map(s => ({
+                    name: s.name,
+                    quantity: s.quantity,
+                    rate: s.rate,
+                    amount: s.amount,
+                    invoice_id: id
+                }));
+                await supabaseClient.from('invoice_services').insert(servicesWithInvoiceId);
+            }
+        }
+
         this.notifyListeners(DATA_STORES.INVOICES);
-        return result;
+        return fromDbInvoice({ ...data, invoice_services: services || [] });
     }
 
     async deleteInvoice(id) {
-        await this._request(`/invoices/${id}`, { method: 'DELETE' });
+        // Delete services first (cascade might be configured in DB)
+        await supabaseClient.from('invoice_services').delete().eq('invoice_id', id);
+
+        const { error } = await supabaseClient
+            .from('invoices')
+            .delete()
+            .eq('id', id);
+
+        if (error) this.handleError(error, 'Delete invoice');
         this.notifyListeners(DATA_STORES.INVOICES);
         return true;
     }
 
     async importInvoices(invoices) {
-        const result = await this._request('/invoices/import', {
-            method: 'POST',
-            body: { invoices }
-        });
-        this.notifyListeners(DATA_STORES.INVOICES); // Assuming import also triggers a notification
-        return result;
+        const userId = await this.getCurrentUserId();
+        const results = [];
+
+        for (const invoice of invoices) {
+            try {
+                const result = await this.addInvoice({ ...invoice, user_id: userId });
+                results.push(result);
+            } catch (err) {
+                console.warn('Error importing invoice:', err);
+            }
+        }
+
+        this.notifyListeners(DATA_STORES.INVOICES);
+        return results;
     }
 
     async getInvoice(id) {
-        return this._request(`/invoices/${id}`);
+        const { data, error } = await supabaseClient
+            .from('invoices')
+            .select('*, invoice_services(*)')
+            .eq('id', id)
+            .single();
+
+        if (error) this.handleError(error, 'Get invoice');
+        return fromDbInvoice(data);
     }
 
     async getAllInvoices() {
-        return this._request('/invoices');
+        const { data, error } = await supabaseClient
+            .from('invoices')
+            .select('*, invoice_services(*)')
+            .order('created_at', { ascending: false });
+
+        if (error) this.handleError(error, 'Get all invoices');
+        return (data || []).map(fromDbInvoice);
     }
 
     async getNextInvoiceNumber() {
-        const result = await this._request('/invoices/next-number');
-        return result.invoiceNumber;
+        const { data, error } = await supabaseClient
+            .from('invoices')
+            .select('invoice_number')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (error || !data || data.length === 0) {
+            return 'INV-001';
+        }
+
+        const lastNumber = data[0].invoice_number;
+        const match = lastNumber.match(/INV-(\d+)/);
+        if (match) {
+            const nextNum = parseInt(match[1]) + 1;
+            return `INV-${String(nextNum).padStart(3, '0')}`;
+        }
+        return 'INV-001';
     }
 
     // ==================== Clients ====================
 
     async addClient(client) {
-        const result = await this._request('/clients', {
-            method: 'POST',
-            body: client
-        });
+        const userId = await this.getCurrentUserId();
+        const { data, error } = await supabaseClient
+            .from('clients')
+            .insert({ ...client, user_id: userId })
+            .select()
+            .single();
+
+        if (error) this.handleError(error, 'Add client');
         this.notifyListeners(DATA_STORES.CLIENTS);
-        return result;
+        return data;
     }
 
     async updateClient(id, client) {
-        const result = await this._request(`/clients/${id}`, {
-            method: 'PUT',
-            body: client
-        });
+        const { data, error } = await supabaseClient
+            .from('clients')
+            .update(client)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) this.handleError(error, 'Update client');
         this.notifyListeners(DATA_STORES.CLIENTS);
-        return result;
+        return data;
     }
 
     async deleteClient(id) {
-        await this._request(`/clients/${id}`, { method: 'DELETE' });
+        const { error } = await supabaseClient
+            .from('clients')
+            .delete()
+            .eq('id', id);
+
+        if (error) this.handleError(error, 'Delete client');
         this.notifyListeners(DATA_STORES.CLIENTS);
         return true;
     }
 
     async getClient(id) {
-        return this._request(`/clients/${id}`);
+        const { data, error } = await supabaseClient
+            .from('clients')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) this.handleError(error, 'Get client');
+        return data;
     }
 
     async getAllClients() {
-        return this._request('/clients');
+        const { data, error } = await supabaseClient
+            .from('clients')
+            .select('*')
+            .order('name', { ascending: true });
+
+        if (error) this.handleError(error, 'Get all clients');
+        return data || [];
     }
 
     async getClientByName(name) {
@@ -270,35 +568,66 @@ class DataLayerAPI {
     // ==================== Settings ====================
 
     async getSetting(key) {
-        const result = await this._request(`/settings/${key}`);
-        return result?.value ?? null;
+        const { data, error } = await supabaseClient
+            .from('settings')
+            .select('value')
+            .eq('key', key)
+            .single();
+
+        if (error && error.code !== 'PGRST116') {
+            console.warn('Get setting error:', error);
+        }
+        return data?.value ?? null;
     }
 
     async setSetting(key, value) {
-        await this._request(`/settings/${key}`, {
-            method: 'PUT',
-            body: { value }
-        });
+        const { error } = await supabaseClient
+            .from('settings')
+            .upsert({ key, value }, { onConflict: 'key' });
+
+        if (error) this.handleError(error, 'Set setting');
         return true;
     }
 
     async getAllSettings() {
-        return this._request('/settings');
+        const { data, error } = await supabaseClient
+            .from('settings')
+            .select('*');
+
+        if (error) this.handleError(error, 'Get all settings');
+        return data || [];
     }
 
     // ==================== Export/Import ====================
 
     async exportData() {
-        return this._request('/export');
+        const entries = await this.getAllEntries();
+        const invoices = await this.getAllInvoices();
+        const clients = await this.getAllClients();
+        const settings = await this.getAllSettings();
+
+        return { entries, invoices, clients, settings };
     }
 
     async importData(data) {
-        await this._request('/import', {
-            method: 'POST',
-            body: data
-        });
+        if (data.clients) {
+            for (const client of data.clients) {
+                try {
+                    await this.addClient(client);
+                } catch (e) { console.warn('Import client error:', e); }
+            }
+        }
+        if (data.entries) {
+            for (const entry of data.entries) {
+                try {
+                    await this.addEntry(entry);
+                } catch (e) { console.warn('Import entry error:', e); }
+            }
+        }
+        if (data.invoices) {
+            await this.importInvoices(data.invoices);
+        }
 
-        // Notify all listeners
         this.notifyListeners(DATA_STORES.ENTRIES);
         this.notifyListeners(DATA_STORES.INVOICES);
         this.notifyListeners(DATA_STORES.CLIENTS);
@@ -307,9 +636,14 @@ class DataLayerAPI {
     }
 
     async clearAll() {
-        await this._request('/clear', { method: 'DELETE' });
+        // This is a destructive operation - should be used carefully
+        console.warn('Clear all data requested');
 
-        // Notify all listeners
+        await supabaseClient.from('invoice_services').delete().neq('id', 0);
+        await supabaseClient.from('invoices').delete().neq('id', 0);
+        await supabaseClient.from('finance_entries').delete().neq('id', 0);
+        await supabaseClient.from('clients').delete().neq('id', 0);
+
         this.notifyListeners(DATA_STORES.ENTRIES);
         this.notifyListeners(DATA_STORES.INVOICES);
         this.notifyListeners(DATA_STORES.CLIENTS);
@@ -318,9 +652,7 @@ class DataLayerAPI {
     }
 
     async clearStore(storeName) {
-        // For API-based layer, we just clear all
-        // Individual store clearing could be implemented if needed
-        console.warn('clearStore: Clearing all data via API');
+        console.warn(`Clear store ${storeName} requested`);
         return this.clearAll();
     }
 }
