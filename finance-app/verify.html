@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verified - FinanceFlow</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/auth-styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--color-bg-primary);
+            font-family: 'Inter', sans-serif;
+            color: var(--color-text-primary);
+            overflow: hidden;
+        }
+
+        .verify-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 450px;
+            margin: 20px;
+            padding: 50px 40px;
+            background: var(--color-bg-card);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--color-border);
+            backdrop-filter: blur(20px);
+            text-align: center;
+        }
+
+        [data-theme="dark"] .verify-container {
+            background: rgba(30, 41, 59, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .verify-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-success-light);
+            border-radius: 50%;
+            color: var(--color-success);
+        }
+
+        .verify-icon svg {
+            width: 40px;
+            height: 40px;
+        }
+
+        .verify-icon.error {
+            background: var(--color-danger-light);
+            color: var(--color-danger);
+        }
+
+        .verify-icon.loading {
+            background: var(--color-primary-light);
+            color: var(--color-primary);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+        }
+
+        .verify-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin-bottom: 12px;
+        }
+
+        .verify-message {
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 32px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+        }
+
+        /* Simple gradient background */
+        .bg-gradient {
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 40% 40%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
+            z-index: 0;
+        }
+
+        [data-theme="dark"] .bg-gradient {
+            background:
+                radial-gradient(ellipse at 20% 80%, rgba(99, 102, 241, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 40% 40%, rgba(16, 185, 129, 0.1) 0%, transparent 40%);
+        }
+
+        @media (max-width: 480px) {
+            .verify-container {
+                margin: 16px;
+                padding: 40px 24px;
+            }
+
+            .verify-title {
+                font-size: 1.5rem;
+            }
+
+            .verify-icon {
+                width: 64px;
+                height: 64px;
+            }
+
+            .verify-icon svg {
+                width: 32px;
+                height: 32px;
+            }
+        }
+    </style>
+</head>
+
+<body data-theme="dark">
+    <div class="bg-gradient"></div>
+
+    <div class="verify-container" id="verifyContainer">
+        <!-- Loading State -->
+        <div id="loadingState">
+            <div class="verify-icon loading">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
+                </svg>
+            </div>
+            <h1 class="verify-title">Verifying...</h1>
+            <p class="verify-message">Please wait while we verify your email address.</p>
+        </div>
+
+        <!-- Success State -->
+        <div id="successState" style="display: none;">
+            <div class="verify-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <path d="M22 4L12 14.01l-3-3" />
+                </svg>
+            </div>
+            <h1 class="verify-title">Email Verified!</h1>
+            <p class="verify-message">Your email has been successfully verified. You can now log in to your account.</p>
+            <a href="login.html" class="btn btn-primary">Continue to Login</a>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" style="display: none;">
+            <div class="verify-icon error">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M15 9l-6 6M9 9l6 6" />
+                </svg>
+            </div>
+            <h1 class="verify-title">Verification Failed</h1>
+            <p class="verify-message" id="errorMessage">The verification link may have expired or is invalid. Please try
+                signing up again.</p>
+            <a href="signup.html" class="btn btn-primary">Back to Sign Up</a>
+        </div>
+    </div>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const loadingState = document.getElementById('loadingState');
+            const successState = document.getElementById('successState');
+            const errorState = document.getElementById('errorState');
+            const errorMessage = document.getElementById('errorMessage');
+
+            try {
+                // Get the hash fragment from URL (Supabase puts tokens here)
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                const accessToken = hashParams.get('access_token');
+                const type = hashParams.get('type');
+
+                // Also check for error in URL
+                const error = hashParams.get('error');
+                const errorDesc = hashParams.get('error_description');
+
+                if (error) {
+                    throw new Error(errorDesc || error);
+                }
+
+                // If we have tokens, the verification was successful
+                if (accessToken && type === 'signup') {
+                    // Set the session
+                    const { data, error: sessionError } = await supabaseClient.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: hashParams.get('refresh_token')
+                    });
+
+                    if (sessionError) throw sessionError;
+
+                    // Update user verification status in database
+                    if (data.user) {
+                        await supabaseClient
+                            .from('users')
+                            .update({ is_verified: true })
+                            .eq('id', data.user.id);
+                    }
+
+                    // Show success
+                    loadingState.style.display = 'none';
+                    successState.style.display = 'block';
+                } else if (type === 'recovery') {
+                    // Password reset flow - redirect to a password reset page or login
+                    loadingState.style.display = 'none';
+                    successState.style.display = 'block';
+                    document.querySelector('#successState .verify-title').textContent = 'Password Reset';
+                    document.querySelector('#successState .verify-message').textContent = 'You can now set a new password.';
+                } else {
+                    // Check if user is already verified via session
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+
+                    if (session) {
+                        loadingState.style.display = 'none';
+                        successState.style.display = 'block';
+                    } else {
+                        throw new Error('Invalid verification link. Please check your email for the correct link.');
+                    }
+                }
+            } catch (err) {
+                console.error('Verification error:', err);
+                loadingState.style.display = 'none';
+                errorState.style.display = 'block';
+                errorMessage.textContent = err.message || 'Verification failed. Please try again.';
+            }
+        });
+    </script>
+</body>
+
+</html>

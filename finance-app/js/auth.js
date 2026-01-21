@@ -111,7 +111,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     options: {
                         data: {
                             name: name
-                        }
+                        },
+                        emailRedirectTo: window.location.origin + '/verify.html'
                     }
                 });
 
