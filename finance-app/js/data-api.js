@@ -130,9 +130,9 @@ class DataLayerAPI {
 
         if (error) {
             console.warn('Could not fetch user role:', error);
-            return 'admin'; // Default to admin for backward compatibility
+            return 'employee'; // Default to safe role
         }
-        return data?.role || 'admin';
+        return data?.role || 'employee';
     }
 
     /**

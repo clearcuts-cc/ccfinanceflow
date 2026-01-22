@@ -31,17 +31,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Check if already logged in
-    async function checkSession() {
-        const { data: { session } } = await supabaseClient.auth.getSession();
+    // Check if already logged in and listen for auth changes
+    // This handles both initial load and auth state changes (like from email verification links)
+    supabaseClient.auth.onAuthStateChange((event, session) => {
         if (session) {
             window.location.href = 'index.html';
         }
-    }
+    });
 
     // LOGIN
     if (loginForm) {
-        checkSession();
+
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // SIGNUP
     if (signupForm) {
-        checkSession();
+
 
         const verificationModal = document.getElementById('verificationModal');
 

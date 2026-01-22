@@ -251,7 +251,7 @@ class EmployeesManager {
                             role: 'employee',
                             admin_id: adminId
                         },
-                        emailRedirectTo: window.location.origin + '/login.html'
+                        emailRedirectTo: window.location.origin + '/verify.html'
                     }
                 });
 

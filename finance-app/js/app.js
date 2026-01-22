@@ -730,6 +730,7 @@ class App {
 
             // Show/hide admin-only elements
             document.querySelectorAll('.admin-only').forEach(el => {
+                // Force double check
                 el.style.display = this.isAdmin ? '' : 'none';
             });
 
@@ -742,8 +743,8 @@ class App {
             console.log(`User role: ${this.isAdmin ? 'Admin' : 'Employee'}`);
         } catch (error) {
             console.error('Error setting up role-based UI:', error);
-            // Default to showing admin UI for backward compatibility
-            this.isAdmin = true;
+            // Default to hidden for security
+            this.isAdmin = false;
         }
     }
 
