@@ -3520,12 +3520,36 @@ table {
     display: flex;
     justify-content: flex-end;
 }
-/* Back Button Style */
-.back-btn {
-    margin-right: var(--spacing-sm);
-}
-.back-btn svg {
-    width: 24px;
-    height: 24px;
+
+/* Page Navigation */
+.page-navigation {
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
 }
 
+.page-navigation.hidden {
+    display: none;
+}
+
+.back-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.back-btn:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-primary);
+    transform: translateX(-4px);
+}
+
+.back-btn svg {
+    width: 20px;
+    height: 20px;
+}

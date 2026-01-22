@@ -239,14 +239,12 @@ class App {
         this.currentPage = page;
 
         // Toggle Back Button visibility
-        const backBtn = document.getElementById('globalBackBtn');
-        if (backBtn) {
+        const backBtnContainer = document.getElementById('globalBackBtnContainer');
+        if (backBtnContainer) {
             if (this.historyStack && this.historyStack.length > 0) {
-                backBtn.classList.remove('hidden');
-                backBtn.style.display = 'flex'; // Ensure it's visible
+                backBtnContainer.classList.remove('hidden');
             } else {
-                backBtn.classList.add('hidden');
-                backBtn.style.display = 'none';
+                backBtnContainer.classList.add('hidden');
             }
         }
 
