@@ -117,22 +117,49 @@ class DataLayerAPI {
 
     /**
      * Get current user's role (admin/employee)
+     * Enhanced to handle users created directly in Supabase Auth
      */
     async getCurrentUserRole() {
         const userId = await this.getCurrentUserId();
         if (!userId) return null;
 
+        // First, try to get role from users table
         const { data, error } = await supabaseClient
             .from('users')
             .select('role')
             .eq('id', userId)
             .single();
 
-        if (error) {
-            console.warn('Could not fetch user role:', error);
-            return 'employee'; // Default to safe role
+        if (data?.role) {
+            return data.role;
         }
-        return data?.role || 'employee';
+
+        // If no user record found, check session metadata
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session?.user?.user_metadata?.role) {
+            return session.user.user_metadata.role;
+        }
+
+        // Check if user is linked as employee in employees table
+        const { data: employeeData } = await supabaseClient
+            .from('employees')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+
+        if (employeeData) {
+            return 'employee';
+        }
+
+        // Default: if no user record exists and not an employee, treat as admin
+        // This handles admin accounts created directly in Supabase
+        if (error && error.code === 'PGRST116') {
+            console.log('No user record found, defaulting to admin role');
+            return 'admin';
+        }
+
+        console.warn('Could not determine user role, defaulting to employee for security');
+        return 'employee';
     }
 
     /**
@@ -140,7 +167,9 @@ class DataLayerAPI {
      */
     async isAdmin() {
         const role = await this.getCurrentUserRole();
-        return role === 'admin';
+        const isAdminRole = role === 'admin';
+        console.log(`Role check: ${role}, isAdmin: ${isAdminRole}`);
+        return isAdminRole;
     }
 
     /**
@@ -276,10 +305,23 @@ class DataLayerAPI {
 
     async getAllEntries(includeAllStatuses = false) {
         const userId = await this.getCurrentUserId();
-        let query = supabaseClient
-            .from('finance_entries')
-            .select('*')
-            .eq('user_id', userId);
+        const isUserAdmin = await this.isAdmin();
+        
+        let query;
+        
+        if (isUserAdmin) {
+            // Admin: see all entries where admin_id = current user (own + employees')
+            query = supabaseClient
+                .from('finance_entries')
+                .select('*')
+                .eq('admin_id', userId);
+        } else {
+            // Employee: see only own entries
+            query = supabaseClient
+                .from('finance_entries')
+                .select('*')
+                .eq('user_id', userId);
+        }
 
         // By default, only show approved entries (for dashboard/stats)
         if (!includeAllStatuses) {
@@ -294,13 +336,31 @@ class DataLayerAPI {
 
     /**
      * Get entries pending approval (admin only)
+     * Shows entries created by employees that belong to this admin
      */
     async getPendingEntries() {
         const userId = await this.getCurrentUserId();
+        const isUserAdmin = await this.isAdmin();
+        
+        if (!isUserAdmin) {
+            // Employees can only see their own pending entries
+            const { data, error } = await supabaseClient
+                .from('finance_entries')
+                .select('*')
+                .eq('user_id', userId)
+                .eq('approval_status', 'pending')
+                .order('created_at', { ascending: false });
+
+            if (error) this.handleError(error, 'Get pending entries');
+            return (data || []).map(fromDbEntry);
+        }
+
+        // Admin: Get all pending entries where admin_id = current user
+        // This shows entries from all employees under this admin
         const { data, error } = await supabaseClient
             .from('finance_entries')
             .select('*')
-            .eq('user_id', userId)
+            .eq('admin_id', userId)
             .eq('approval_status', 'pending')
             .order('created_at', { ascending: false });
 
@@ -347,7 +407,17 @@ class DataLayerAPI {
 
     async getFilteredEntries(filters = {}) {
         const userId = await this.getCurrentUserId();
-        let query = supabaseClient.from('finance_entries').select('*').eq('user_id', userId);
+        const isUserAdmin = await this.isAdmin();
+        
+        let query;
+        
+        if (isUserAdmin) {
+            // Admin: see all entries where admin_id = current user
+            query = supabaseClient.from('finance_entries').select('*').eq('admin_id', userId);
+        } else {
+            // Employee: see only own entries
+            query = supabaseClient.from('finance_entries').select('*').eq('user_id', userId);
+        }
 
         if (filters.startDate) {
             query = query.gte('date', filters.startDate);
@@ -425,13 +495,22 @@ class DataLayerAPI {
 
     async getMonthlyData(year) {
         const userId = await this.getCurrentUserId();
-        const { data, error } = await supabaseClient
+        const isUserAdmin = await this.isAdmin();
+        
+        let query = supabaseClient
             .from('finance_entries')
             .select('*')
-            .eq('user_id', userId)
             .eq('approval_status', 'approved')
             .gte('date', `${year}-01-01`)
             .lte('date', `${year}-12-31`);
+        
+        if (isUserAdmin) {
+            query = query.eq('admin_id', userId);
+        } else {
+            query = query.eq('user_id', userId);
+        }
+        
+        const { data, error } = await query;
 
         if (error) this.handleError(error, 'Get monthly data');
 

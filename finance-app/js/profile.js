@@ -73,6 +73,18 @@ class ProfileManager {
                 console.warn('Could not fetch user profile:', profileError);
             }
 
+            // Determine role - check profile first, then metadata, then default
+            let role = profile?.role || user.user_metadata?.role;
+            if (!role) {
+                // Check if user is employee
+                const { data: empData } = await supabaseClient
+                    .from('employees')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .single();
+                role = empData ? 'employee' : 'admin';
+            }
+
             // Merge auth user with profile data
             this.currentUser = {
                 id: user.id,
@@ -80,7 +92,7 @@ class ProfileManager {
                 name: profile?.name || user.user_metadata?.name || 'User',
                 avatar: profile?.avatar || null,
                 phone: profile?.phone || null,
-                role: profile?.role || 'user',
+                role: role,
                 created_at: user.created_at
             };
 

@@ -68,12 +68,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (data.session) {
+                    // Ensure user profile exists in users table
+                    const userProfile = await ensureUserProfile(data.user);
+                    
                     // Store user info in localStorage for quick access
-                    const userProfile = await getUserProfile(data.user.id);
                     localStorage.setItem('user', JSON.stringify({
                         id: data.user.id,
                         email: data.user.email,
                         name: data.user.user_metadata?.name || userProfile?.name || 'User',
+                        role: userProfile?.role || 'admin',
                         avatar: userProfile?.avatar || null,
                         phone: userProfile?.phone || null,
                         created_at: data.user.created_at
@@ -214,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const { data, error } = await supabaseClient
                 .from('users')
-                .select('name, avatar, phone')
+                .select('name, avatar, phone, role')
                 .eq('id', userId)
                 .single();
 
@@ -226,6 +229,65 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.warn('Error fetching user profile:', err);
             return null;
+        }
+    }
+
+    /**
+     * Ensure user profile exists in users table
+     * Creates profile if missing, handles admin accounts created directly in Supabase
+     */
+    async function ensureUserProfile(user) {
+        try {
+            // First, try to get existing profile
+            const { data: existingProfile, error: fetchError } = await supabaseClient
+                .from('users')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (existingProfile) {
+                // Profile exists, return it
+                return existingProfile;
+            }
+
+            // Profile doesn't exist - determine role
+            // Check if user is an employee (has admin_id in metadata)
+            const isEmployee = user.user_metadata?.role === 'employee' || user.user_metadata?.admin_id;
+            const role = isEmployee ? 'employee' : 'admin';
+
+            // Create new profile
+            const newProfile = {
+                id: user.id,
+                email: user.email,
+                name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+                role: role,
+                is_verified: true,
+                created_at: new Date().toISOString()
+            };
+
+            const { data: createdProfile, error: createError } = await supabaseClient
+                .from('users')
+                .insert(newProfile)
+                .select()
+                .single();
+
+            if (createError) {
+                console.warn('Could not create user profile:', createError);
+                // Return a default profile so login can continue
+                return { ...newProfile };
+            }
+
+            console.log(`Created user profile with role: ${role}`);
+            return createdProfile;
+        } catch (err) {
+            console.error('Error ensuring user profile:', err);
+            // Return default admin profile to prevent blocking login
+            return {
+                id: user.id,
+                email: user.email,
+                name: user.user_metadata?.name || 'User',
+                role: 'admin'
+            };
         }
     }
 });

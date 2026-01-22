@@ -26,6 +26,8 @@ class App {
      * Initialize the application
      */
     async init() {
+        const loadingOverlay = document.getElementById('globalLoadingOverlay');
+        
         // Check Authentication using Supabase session
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) {
@@ -91,9 +93,22 @@ class App {
             dataLayer.subscribe(DATA_STORES.INVOICES, () => invoiceManager.renderInvoiceHistory());
 
             console.log('FinanceFlow initialized successfully');
+            
+            // Hide loading overlay with animation
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('hidden');
+                setTimeout(() => {
+                    loadingOverlay.style.display = 'none';
+                }, 300);
+            }
         } catch (error) {
             console.error('FATAL: Failed to initialize app:', error);
             showToast(`Failed to initialize: ${error.message}`, 'error');
+            
+            // Hide loading overlay even on error
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('hidden');
+            }
         }
     }
 
