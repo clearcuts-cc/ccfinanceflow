@@ -263,7 +263,8 @@ table {
     transition: all var(--transition-fast);
     flex-shrink: 0;
     position: absolute;
-    right: -12px;
+    right: -20px;
+    /* Fully outside */
     top: 50%;
     transform: translateY(-50%);
     z-index: 110;
@@ -291,7 +292,7 @@ table {
 
 /* When sidebar is collapsed, arrow points right */
 .sidebar.collapsed .sidebar-toggle {
-    right: -12px;
+    right: -20px;
     transform: translateY(-50%);
 }
 
@@ -428,8 +429,10 @@ table {
 
 /* ==================== Header ==================== */
 .header {
-    position: sticky;
+    position: fixed;
     top: 0;
+    right: 0;
+    left: var(--sidebar-width);
     height: var(--header-height);
     background: var(--color-bg-secondary);
     border-bottom: 1px solid var(--color-border);
@@ -437,8 +440,12 @@ table {
     align-items: center;
     justify-content: space-between;
     padding: 0 var(--spacing-xl);
-    padding: 0 var(--spacing-xl);
     z-index: 1000;
+    transition: left var(--transition-base);
+}
+
+.sidebar.collapsed~.main-content .header {
+    left: var(--sidebar-collapsed-width);
 }
 
 .header-left {
@@ -537,6 +544,7 @@ table {
 /* ==================== Page Container ==================== */
 .page-container {
     padding: var(--spacing-xl);
+    padding-top: calc(var(--header-height) + var(--spacing-xl));
 }
 
 .page {
@@ -2232,6 +2240,11 @@ table {
         margin-left: 0;
     }
 
+    .header {
+        left: 0;
+        width: 100%;
+    }
+
     .mobile-menu-btn {
         display: flex;
     }
@@ -2292,6 +2305,7 @@ table {
 
     .page-container {
         padding: var(--spacing-md);
+        padding-top: calc(var(--header-height) + var(--spacing-md));
     }
 
     .entries-table-container {

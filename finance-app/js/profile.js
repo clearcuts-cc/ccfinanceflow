@@ -195,10 +195,16 @@ class ProfileManager {
         if (src) {
             img.src = src;
             img.style.display = 'block';
+            img.classList.remove('hidden');
+
             placeholder.style.display = 'none';
+            placeholder.classList.add('hidden');
         } else {
             img.style.display = 'none';
+            img.classList.add('hidden');
+
             placeholder.style.display = 'flex';
+            placeholder.classList.remove('hidden');
             placeholder.textContent = this.getInitials(name);
         }
     }

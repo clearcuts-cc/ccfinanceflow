@@ -498,13 +498,32 @@ class App {
         });
 
         // Save agency details
-        document.getElementById('saveAgencySettings').addEventListener('click', async () => {
-            await dataLayer.setSetting('agencyName', document.getElementById('settingsAgencyName').value);
-            await dataLayer.setSetting('agencyContact', document.getElementById('settingsAgencyContact').value);
-            await dataLayer.setSetting('agencyEmail', document.getElementById('settingsAgencyEmail').value);
-            await dataLayer.setSetting('agencyAddress', document.getElementById('settingsAgencyAddress').value);
-            showToast('Agency details saved', 'success');
-        });
+        const saveAgencyBtn = document.getElementById('saveAgencySettings');
+        if (saveAgencyBtn) {
+            saveAgencyBtn.addEventListener('click', async (e) => {
+                // Prevent default if inside form
+                e.preventDefault();
+
+                const originalText = saveAgencyBtn.innerHTML;
+                saveAgencyBtn.disabled = true;
+                saveAgencyBtn.innerHTML = '<span class="spinner-small"></span> Saving...';
+
+                try {
+                    await dataLayer.setSetting('agencyName', document.getElementById('settingsAgencyName').value);
+                    await dataLayer.setSetting('agencyContact', document.getElementById('settingsAgencyContact').value);
+                    await dataLayer.setSetting('agencyEmail', document.getElementById('settingsAgencyEmail').value);
+                    await dataLayer.setSetting('agencyAddress', document.getElementById('settingsAgencyAddress').value);
+
+                    showToast('Agency details saved successfully', 'success');
+                } catch (error) {
+                    console.error('Failed to save settings:', error);
+                    showToast('Failed to save settings. Please try again.', 'error');
+                } finally {
+                    saveAgencyBtn.disabled = false;
+                    saveAgencyBtn.innerHTML = originalText;
+                }
+            });
+        }
 
         // Export data
         document.getElementById('exportDataBtn').addEventListener('click', async () => {

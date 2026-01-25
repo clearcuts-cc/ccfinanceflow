@@ -110,6 +110,39 @@ class DataLayerAPI {
     }
 
     /**
+     * Get map of all users for enriching entries
+     */
+    async getUsersMap() {
+        try {
+            const { data: users } = await supabaseClient
+                .from('users')
+                .select('id, name, role');
+
+            const map = new Map();
+            if (users) {
+                users.forEach(u => map.set(u.id, u));
+            }
+            return map;
+        } catch (e) {
+            console.warn('Failed to fetch users map:', e);
+            return new Map();
+        }
+    }
+
+    /**
+     * Enrich entry with real-time user name from users table
+     */
+    enrichEntry(entry, userMap) {
+        if (entry && entry.userId && userMap.has(entry.userId)) {
+            const user = userMap.get(entry.userId);
+            const roleLabel = user.role === 'admin' ? 'Admin' : 'Employee';
+            const name = user.name || 'Unknown';
+            entry.createdByName = `${roleLabel} - ${name}`;
+        }
+        return entry;
+    }
+
+    /**
      * Get current user ID
      */
     async getCurrentUserId() {
@@ -378,7 +411,10 @@ class DataLayerAPI {
         const { data, error } = await query.order('date', { ascending: false });
 
         if (error) this.handleError(error, 'Get all entries');
-        return (data || []).map(fromDbEntry);
+
+        const entries = (data || []).map(fromDbEntry);
+        const userMap = await this.getUsersMap();
+        return entries.map(e => this.enrichEntry(e, userMap));
     }
 
     /**
@@ -399,7 +435,10 @@ class DataLayerAPI {
                 .order('created_at', { ascending: false });
 
             if (error) this.handleError(error, 'Get pending entries');
-            return (data || []).map(fromDbEntry);
+
+            const entries = (data || []).map(fromDbEntry);
+            const userMap = await this.getUsersMap();
+            return entries.map(e => this.enrichEntry(e, userMap));
         }
 
         // Admin: Get all pending entries where admin_id = current user
@@ -412,7 +451,10 @@ class DataLayerAPI {
             .order('created_at', { ascending: false });
 
         if (error) this.handleError(error, 'Get pending entries');
-        return (data || []).map(fromDbEntry);
+
+        const entries = (data || []).map(fromDbEntry);
+        const userMap = await this.getUsersMap();
+        return entries.map(e => this.enrichEntry(e, userMap));
     }
 
     /**
@@ -514,7 +556,10 @@ class DataLayerAPI {
 
         const { data, error } = await query;
         if (error) this.handleError(error, 'Filter entries');
-        return (data || []).map(fromDbEntry);
+
+        const entries = (data || []).map(fromDbEntry);
+        const userMap = await this.getUsersMap();
+        return entries.map(e => this.enrichEntry(e, userMap));
     }
 
     async getFinancialSummary(filters = {}) {
