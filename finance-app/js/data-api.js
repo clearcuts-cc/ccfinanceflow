@@ -709,9 +709,8 @@ class DataLayerAPI {
         const { data: { session } } = await supabaseClient.auth.getSession();
         const userEmail = session?.user?.email;
 
-        const isAdmin = await this.isAdmin();
-        const roleLabel = isAdmin ? 'Admin' : 'Employee';
-        const formattedCreatedBy = `${roleLabel} - ${userName}`;
+        // Use manual name if provided, otherwise fallback
+        const formattedCreatedBy = invoice.created_by_name || `${await this.isAdmin() ? 'Admin' : 'Employee'} - ${userName}`;
 
         const { data: invoiceResult, error: invoiceError } = await supabaseClient
             .from('invoices')
@@ -920,15 +919,37 @@ class DataLayerAPI {
         return data;
     }
 
-    async getAllClients() {
+    async getAllClients(approvedOnly = false) {
         const adminId = await this.getAdminId();
-        const { data, error } = await supabaseClient
+        let query = supabaseClient
             .from('clients')
             .select('*')
             .eq('admin_id', adminId)
             .order('name', { ascending: true });
 
+        if (approvedOnly) {
+            query = query.eq('approval_status', 'approved');
+        }
+
+        const { data, error } = await query;
         if (error) this.handleError(error, 'Get all clients');
+        return data || [];
+    }
+
+    async getPendingClients() {
+        const adminId = await this.getAdminId();
+
+        // Only admins check this, but safety check
+        if (!await this.isAdmin()) return [];
+
+        const { data, error } = await supabaseClient
+            .from('clients')
+            .select('*')
+            .eq('admin_id', adminId)
+            .eq('approval_status', 'pending')
+            .order('created_at', { ascending: false });
+
+        if (error) this.handleError(error, 'Get pending clients');
         return data || [];
     }
 

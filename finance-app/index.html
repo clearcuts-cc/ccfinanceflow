@@ -623,6 +623,11 @@
                                             <label for="invoiceDueDate">Due Date</label>
                                             <input type="date" id="invoiceDueDate" required>
                                         </div>
+                                        <div class="form-group">
+                                            <label for="invoiceLoginName">Your Name (Login Name) *</label>
+                                            <input type="text" id="invoiceLoginName" required
+                                                placeholder="Enter your name">
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1050,6 +1055,14 @@
             </div>
             <form id="entryForm" class="modal-form">
                 <input type="hidden" id="entryId">
+
+                <!-- NEW: Login Name Field -->
+                <div class="form-group">
+                    <label for="entryLoginName">Your Name (Login Name) *</label>
+                    <input type="text" id="entryLoginName" required placeholder="Enter your name (e.g., Rahul)">
+                    <small class="form-help">This name will be shown in the history</small>
+                </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="entryDate">Date *</label>

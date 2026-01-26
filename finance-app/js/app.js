@@ -591,9 +591,17 @@ class App {
 
         form.reset();
 
+        // user's saved name preference or previously entered name
+        const savedName = localStorage.getItem('lastLoginName') || '';
+
         if (entry) {
             title.textContent = 'Edit Finance Entry';
             document.getElementById('entryId').value = entry.id;
+
+            // Extract raw name from "Role - Name" format if necessary, or just use saved
+            // But usually we just want them to confirm their name again or leave it
+            document.getElementById('entryLoginName').value = savedName;
+
             document.getElementById('entryDate').value = entry.date;
             document.getElementById('entryClient').value = entry.clientName;
             document.getElementById('entryDescription').value = entry.description || '';
@@ -606,6 +614,7 @@ class App {
         } else {
             title.textContent = 'Add Finance Entry';
             document.getElementById('entryId').value = '';
+            document.getElementById('entryLoginName').value = savedName;
             document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
             // Default to income, show status field
             this.toggleStatusField('income');
@@ -647,6 +656,29 @@ class App {
      */
     async saveEntry() {
         const id = document.getElementById('entryId').value;
+        let loginName = '';
+
+        // Prioritize name from Profile Manager if available
+        if (window.profileManager && window.profileManager.currentUser && window.profileManager.currentUser.name && window.profileManager.currentUser.name !== 'User') {
+            loginName = window.profileManager.currentUser.name;
+        } else {
+            // Fallback to manual input
+            loginName = document.getElementById('entryLoginName').value.trim();
+        }
+
+        if (!loginName) {
+            showToast('Please enter your name', 'error');
+            return;
+        }
+
+        // Save name for next time (even if from profile, good to cache)
+        localStorage.setItem('lastLoginName', loginName);
+
+        // Determine Role Label
+        const role = await dataLayer.getCurrentUserRole();
+        const roleLabel = role === 'admin' ? 'Admin' : 'Employee';
+        const formattedCreatedBy = `${roleLabel} - ${loginName}`;
+
         const entry = {
             date: document.getElementById('entryDate').value,
             clientName: document.getElementById('entryClient').value,
@@ -654,7 +686,8 @@ class App {
             amount: parseFloat(document.getElementById('entryAmount').value),
             type: document.getElementById('entryType').value,
             status: document.getElementById('entryStatus').value,
-            paymentMode: document.getElementById('entryPaymentMode').value
+            paymentMode: document.getElementById('entryPaymentMode').value,
+            created_by_name: formattedCreatedBy // Send manual name
         };
 
         try {

@@ -18,6 +18,11 @@ class InvoiceManager {
         this.setDefaultDates();
         this.bindEvents();
         await this.renderInvoiceHistory();
+
+        // Check for saved login name
+        const savedName = localStorage.getItem('lastLoginName') || '';
+        const nameInput = document.getElementById('invoiceLoginName');
+        if (nameInput) nameInput.value = savedName;
     }
 
     /**
@@ -60,6 +65,84 @@ class InvoiceManager {
 
         document.getElementById('invoiceDate').value = today.toISOString().split('T')[0];
         document.getElementById('invoiceDueDate').value = dueDate.toISOString().split('T')[0];
+    }
+
+    // ... (rest of bindEvents etc) ...
+
+    /**
+     * Save invoice to database
+     */
+    async saveInvoice() {
+        const data = this.getInvoiceData();
+
+        // Validate
+        if (!data.clientName) {
+            showToast('Please enter client name', 'error');
+            return;
+        }
+
+        if (data.services.length === 0 || !data.services[0].name) {
+            showToast('Please add at least one service', 'error');
+            return;
+        }
+
+        let loginName = '';
+        // Prioritize name from Profile Manager if available
+        if (window.profileManager && window.profileManager.currentUser && window.profileManager.currentUser.name && window.profileManager.currentUser.name !== 'User') {
+            loginName = window.profileManager.currentUser.name;
+        } else {
+            // Fallback to manual input
+            loginName = document.getElementById('invoiceLoginName').value.trim();
+        }
+
+        if (!loginName) {
+            showToast('Please enter your name', 'error');
+            return;
+        }
+
+        // Save name for next time
+        localStorage.setItem('lastLoginName', loginName);
+
+        // Determine Role Label
+        const role = await dataLayer.getCurrentUserRole();
+        const roleLabel = role === 'admin' ? 'Admin' : 'Employee';
+        const formattedCreatedBy = `${roleLabel} - ${loginName}`;
+
+        // Add created_by_name to invoice data object for saving
+        data.created_by_name = formattedCreatedBy;
+
+        try {
+            await dataLayer.addInvoice(data);
+
+            // Create finance entry if needed
+            if (data.grandTotal > 0) {
+                await dataLayer.addEntry({
+                    date: data.invoiceDate,
+                    clientName: data.clientName,
+                    description: `Invoice ${data.invoiceNumber}`,
+                    amount: data.grandTotal,
+                    type: 'income',
+                    status: data.paymentStatus === 'paid' ? 'received' : 'pending',
+                    paymentMode: 'bank_transfer',
+                    created_by_name: formattedCreatedBy // Also save to entry
+                });
+            }
+
+            showToast('Invoice saved successfully', 'success');
+            await this.renderInvoiceHistory();
+            this.resetForm();
+
+            // Restore name after reset
+            document.getElementById('invoiceLoginName').value = loginName;
+
+            // Update charts
+            if (typeof chartsManager !== 'undefined') {
+                chartsManager.updateAllCharts();
+            }
+        } catch (error) {
+            console.error('Error saving invoice:', error);
+            showToast('Failed to save invoice', 'error');
+        }
     }
 
     /**
