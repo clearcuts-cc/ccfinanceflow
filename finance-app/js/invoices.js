@@ -201,7 +201,7 @@ class InvoiceManager {
         });
 
         // Email invoice
-        document.getElementById('emailInvoiceBtn').addEventListener('click', () => this.sendEmail());
+        document.getElementById('emailInvoiceBtn')?.addEventListener('click', () => this.sendEmail());
 
         // Reset invoice
         document.getElementById('resetInvoiceBtn').addEventListener('click', () => this.resetForm());
@@ -730,9 +730,11 @@ class InvoiceManager {
         }
 
         const btn = document.getElementById('emailInvoiceBtn');
-        const originalText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = `<span class="spinner-small"></span> Sending...`;
+        const originalText = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-small"></span> Sending...`;
+        }
 
         try {
             // TEMPORARILY DISABLED AS REQUESTED
@@ -757,8 +759,10 @@ class InvoiceManager {
             console.error('Error sending email:', error);
             showToast('Failed to send email. Check API key or console.', 'error');
         } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
         }
     }
 
@@ -799,9 +803,24 @@ class InvoiceManager {
      * Render invoice history
      */
     async renderInvoiceHistory() {
-        const invoices = await dataLayer.getAllInvoices();
+        // Security Check: Only Admins can see invoice history
+        const isAdmin = await dataLayer.isAdmin();
         const container = document.getElementById('invoiceHistoryList');
         const emptyState = document.getElementById('invoicesEmptyState');
+        const historySection = container ? container.closest('.invoice-history-section') : null;
+
+        if (!isAdmin) {
+            if (container) container.innerHTML = '';
+            if (emptyState) emptyState.style.display = 'none';
+            // Hide the entire history section if possible
+            if (historySection) historySection.style.display = 'none';
+            return;
+        }
+
+        // Show section for admins
+        if (historySection) historySection.style.display = 'block';
+
+        const invoices = await dataLayer.getAllInvoices();
         const currency = window.appCurrency || '₹';
 
         if (invoices.length === 0) {

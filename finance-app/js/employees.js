@@ -341,15 +341,26 @@ class EmployeesManager {
 
     /**
      * Delete employee
+     * Note: Finance entries, invoices, and other data created by the employee
+     * are AUTOMATICALLY PRESERVED - they are not deleted with the employee.
      */
     async deleteEmployee(id) {
-        if (!confirm('Are you sure you want to delete this employee? This action cannot be undone.')) {
+        const employee = this.employees.find(e => e.id === id);
+        const empName = employee?.name || 'this employee';
+
+        const confirmMessage = `Delete ${empName}?\n\n` +
+            `• The employee's login access will be removed\n` +
+            `• All entries, invoices, and data created by them will be PRESERVED\n` +
+            `• The data will still show "${empName}" as the creator\n\n` +
+            `This action cannot be undone.`;
+
+        if (!confirm(confirmMessage)) {
             return;
         }
 
         try {
             await dataLayer.deleteEmployee(id);
-            showToast('Employee deleted successfully', 'success');
+            showToast(`${empName} deleted. Their entries are preserved.`, 'success');
             await this.loadEmployees();
         } catch (error) {
             console.error('Error deleting employee:', error);

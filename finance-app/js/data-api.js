@@ -1208,12 +1208,20 @@ class DataLayerAPI {
     }
 
     async getAllSettings() {
+        const adminId = await this.getAdminId();
         const { data, error } = await supabaseClient
             .from('settings')
-            .select('*');
+            .select('*')
+            .eq('admin_id', adminId);
 
         if (error) this.handleError(error, 'Get all settings');
-        return data || [];
+
+        // Convert array of key-value pairs to object
+        const settings = {};
+        (data || []).forEach(item => {
+            settings[item.key] = item.value;
+        });
+        return settings;
     }
 
     // ==================== Export/Import ====================

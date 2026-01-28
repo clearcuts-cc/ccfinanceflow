@@ -5,6 +5,11 @@
 class InvestmentsManager {
     constructor() {
         this.investments = [];
+        this.filters = {
+            search: '',
+            type: '',
+            status: ''
+        };
     }
 
     async init() {
@@ -36,6 +41,30 @@ class InvestmentsManager {
                 this.saveInvestment();
             });
         }
+
+        // Filters
+        document.getElementById('invSearch')?.addEventListener('input', (e) => {
+            this.filters.search = e.target.value.toLowerCase();
+            this.renderTable();
+        });
+
+        document.getElementById('invFilterType')?.addEventListener('change', (e) => {
+            this.filters.type = e.target.value;
+            this.renderTable();
+        });
+
+        document.getElementById('invFilterStatus')?.addEventListener('change', (e) => {
+            this.filters.status = e.target.value;
+            this.renderTable();
+        });
+
+        document.getElementById('invClearFilters')?.addEventListener('click', () => {
+            this.filters = { search: '', type: '', status: '' };
+            document.getElementById('invSearch').value = '';
+            document.getElementById('invFilterType').value = '';
+            document.getElementById('invFilterStatus').value = '';
+            this.renderTable();
+        });
     }
 
     async loadInvestments() {
@@ -138,15 +167,34 @@ class InvestmentsManager {
 
         if (!tbody) return;
 
-        if (this.investments.length === 0) {
+        // Apply filters
+        let displayedInvestments = this.investments.filter(inv => {
+            const matchesSearch = !this.filters.search ||
+                inv.item_name.toLowerCase().includes(this.filters.search) ||
+                (inv.purpose && inv.purpose.toLowerCase().includes(this.filters.search));
+
+            const matchesType = !this.filters.type || inv.type === this.filters.type;
+            const matchesStatus = !this.filters.status || inv.status === this.filters.status;
+
+            return matchesSearch && matchesType && matchesStatus;
+        });
+
+        if (displayedInvestments.length === 0) {
             tbody.innerHTML = '';
-            if (emptyState) emptyState.classList.remove('hidden');
+            if (emptyState && this.investments.length === 0) {
+                // Only show big empty state if NO investments at all
+                emptyState.classList.remove('hidden');
+            } else {
+                // Show "no results" row if filters hidden results
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center p-4">No investments match your filters</td></tr>`;
+                if (emptyState) emptyState.classList.add('hidden');
+            }
             return;
         }
 
         if (emptyState) emptyState.classList.add('hidden');
 
-        tbody.innerHTML = this.investments.map(inv => `
+        tbody.innerHTML = displayedInvestments.map(inv => `
             <tr>
                 <td>${inv.item_name}</td>
                 <td><span class="badge badge-primary">${inv.type}</span></td>

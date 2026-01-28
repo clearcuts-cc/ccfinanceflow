@@ -234,6 +234,46 @@
 
                 <!-- Dashboard Page -->
                 <section class="page active" id="dashboardPage">
+                    <!-- Dashboard Filters -->
+                    <div class="filters-bar dashboard-filters mb-20">
+                        <div class="filter-group">
+                            <label>Date Range</label>
+                            <div class="date-range">
+                                <input type="date" id="dashStartDate" class="filter-input">
+                                <span>to</span>
+                                <input type="date" id="dashEndDate" class="filter-input">
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>Month</label>
+                            <select id="dashFilterMonth" class="filter-select">
+                                <option value="">All Months</option>
+                                <option value="0">January</option>
+                                <option value="1">February</option>
+                                <option value="2">March</option>
+                                <option value="3">April</option>
+                                <option value="4">May</option>
+                                <option value="5">June</option>
+                                <option value="6">July</option>
+                                <option value="7">August</option>
+                                <option value="8">September</option>
+                                <option value="9">October</option>
+                                <option value="10">November</option>
+                                <option value="11">December</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Year</label>
+                            <select id="dashFilterYear" class="filter-select">
+                                <option value="">All Years</option>
+                                <option value="2026">2026</option>
+                                <option value="2025">2025</option>
+                                <option value="2024">2024</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" id="dashClearFilters">Clear</button>
+                    </div>
+
                     <!-- Stats Cards -->
                     <div class="stats-grid">
                         <div class="stat-card income">
@@ -717,17 +757,11 @@
                                         Invoice</button>
                                     <button type="button" class="btn btn-info" id="emailInvoiceBtn">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path
-                                                d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
-                                            </path>
-                                            <polyline points="22,6 12,13 2,6"></polyline>
-                                        </svg>
-                                        Send Email
-                                    </button>
-                                    <button type="button" class="btn btn-primary" id="downloadInvoiceBtn">Download
-                                        PDF</button>
-                                    <button type="submit" class="btn btn-success" id="saveInvoiceBtn">Save
-                                        Invoice</button>
+                                            <button type="button" class="btn btn-primary"
+                                                id="downloadInvoiceBtn">Download
+                                                PDF</button>
+                                            <button type="submit" class="btn btn-success" id="saveInvoiceBtn">Save
+                                                Invoice</button>
                                 </div>
                             </form>
                         </div>
@@ -798,6 +832,45 @@
                             </svg>
                             Add Investment
                         </button>
+                    </div>
+
+                    <!-- Investments Filters -->
+                    <div class="filters-bar mb-20">
+                        <div class="filter-group search-group" style="flex-grow: 1;">
+                            <label>Search Investment</label>
+                            <div class="search-box full-width">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="M21 21l-4.35-4.35" />
+                                </svg>
+                                <input type="text" id="invSearch" placeholder="Search by item name or purpose...">
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>Type</label>
+                            <select id="invFilterType" class="filter-select">
+                                <option value="">All Types</option>
+                                <option value="Stocks">Stocks</option>
+                                <option value="Mutual Funds">Mutual Funds</option>
+                                <option value="Gold">Gold</option>
+                                <option value="Real Estate">Real Estate</option>
+                                <option value="Crypto">Crypto</option>
+                                <option value="PF/PPF">PF/PPF</option>
+                                <option value="Fixed Deposit">Fixed Deposit</option>
+                                <option value="Bonds">Bonds</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Status</label>
+                            <select id="invFilterStatus" class="filter-select">
+                                <option value="">All Status</option>
+                                <option value="approved">Approved</option>
+                                <option value="pending">Pending</option>
+                                <option value="declined">Declined</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" id="invClearFilters">Clear</button>
                     </div>
 
                     <div class="investments-charts" style="margin-bottom: 2rem;">
@@ -990,14 +1063,17 @@
                             </div>
                         </div>
 
-                        <div class="settings-card">
+                        <div class="settings-card admin-only" id="agencyDetailsSection">
                             <h3>Agency Details</h3>
                             <div class="agency-form">
                                 <div class="form-group">
                                     <label for="settingsAgencyName">Agency Name</label>
                                     <input type="text" id="settingsAgencyName" placeholder="Your Agency Name">
                                 </div>
-                                <!-- Contact Number removed as per request -->
+                                <div class="form-group">
+                                    <label for="settingsAgencyContact">Contact Number</label>
+                                    <input type="text" id="settingsAgencyContact" placeholder="+91 98765 43210">
+                                </div>
                                 <div class="form-group">
                                     <label for="settingsAgencyEmail">Email</label>
                                     <input type="email" id="settingsAgencyEmail" placeholder="hello@agency.com">

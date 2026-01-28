@@ -2393,12 +2393,16 @@ table {
         background: rgba(0, 0, 0, 0.5);
         z-index: 99;
         opacity: 0;
-        transition: opacity var(--transition-base);
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity var(--transition-base), visibility var(--transition-base);
     }
 
     .sidebar-overlay.active {
         display: block;
         opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
     }
 
     /* Main Content - Full width on mobile */
@@ -3652,6 +3656,7 @@ table {
 .loading-overlay.hidden {
     opacity: 0;
     visibility: hidden;
+    pointer-events: none;
 }
 
 .loading-spinner {
@@ -4044,5 +4049,366 @@ table {
 
     .stat-label {
         font-size: var(--font-size-xs);
+    }
+}
+
+/* ==================== CRITICAL MODAL FIX FOR MOBILE ==================== */
+/* Ensures modals (Add Entry, Add Client, etc.) work correctly on mobile */
+
+@media (max-width: 768px) {
+
+    /* Modal overlay - allow scroll */
+    .modal-overlay {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0 !important;
+    }
+
+    /* Modal container - full screen with scroll */
+    .modal-overlay .modal {
+        position: relative;
+        margin: 0;
+        border-radius: 0;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: auto;
+        max-height: none !important;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Modal form - allow scrolling */
+    .modal-form {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 16px !important;
+        padding-bottom: 120px !important;
+        /* Extra space for keyboard */
+    }
+
+    /* Sticky header */
+    .modal-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: var(--color-bg-card);
+        flex-shrink: 0;
+    }
+
+    /* Sticky footer actions */
+    .modal-actions {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        background: var(--color-bg-card);
+        padding: 12px 16px !important;
+        border-top: 1px solid var(--color-border);
+        display: flex;
+        gap: 8px;
+    }
+
+    .modal-actions .btn {
+        flex: 1;
+        min-height: 48px;
+    }
+
+    /* Form elements inside modal */
+    #entryModal .form-group input,
+    #entryModal .form-group select,
+    #entryModal .form-group textarea,
+    #clientModal .form-group input,
+    #clientModal .form-group textarea,
+    #investmentModal .form-group input,
+    #investmentModal .form-group select,
+    #investmentModal .form-group textarea,
+    #employeeModal .form-group input {
+        font-size: 16px !important;
+        padding: 14px 12px !important;
+        min-height: 50px;
+        width: 100%;
+        box-sizing: border-box;
+        -webkit-appearance: none;
+        appearance: none;
+        border-radius: 8px;
+    }
+
+    /* Labels more visible */
+    #entryModal .form-group label,
+    #clientModal .form-group label,
+    #investmentModal .form-group label,
+    #employeeModal .form-group label {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    /* Form rows stack vertically */
+    #entryModal .form-row,
+    #entryModal .form-row.three-col {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0 !important;
+    }
+
+    /* Help text visible */
+    .form-help {
+        font-size: 12px;
+        color: var(--color-text-muted);
+        margin-top: 4px;
+        display: block;
+    }
+
+    /* Select dropdown arrow */
+    #entryModal select,
+    #investmentModal select,
+    #clientModal select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6,9 12,15 18,9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 40px !important;
+    }
+
+    /* Textarea specific */
+    #entryModal textarea,
+    #clientModal textarea,
+    #investmentModal textarea {
+        min-height: 80px;
+        resize: none;
+    }
+}
+
+/* ==================== MOBILE TOUCH FIXES ==================== */
+/* Critical fixes for touch interactions on mobile devices */
+
+/* Ensure touch events work properly */
+@media (max-width: 768px) {
+
+    /* Enable touch scrolling in scrollable areas */
+    .page-container,
+    .modal-form,
+    .entries-table-container,
+    .invoice-history-section,
+    .services-table-wrapper {
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y pan-x;
+    }
+
+    /* All clickable elements need proper touch handling */
+    .btn,
+    .nav-link,
+    .action-btn,
+    .btn-icon,
+    .mobile-menu-btn,
+    .theme-toggle,
+    .modal-close,
+    .view-all-link,
+    .invoice-history-item,
+    .client-card,
+    .stat-card,
+    .filter-select,
+    .filter-input {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: rgba(99, 102, 241, 0.2);
+        cursor: pointer;
+    }
+
+    /* Larger touch targets for action buttons */
+    .action-buttons {
+        gap: var(--spacing-md);
+    }
+
+    .action-btn {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        min-height: 48px;
+    }
+
+    .action-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Fix for "Add Entry" and similar primary action buttons */
+    #addEntryBtn,
+    #addClientBtn,
+    #addInvestmentBtn,
+    .action-bar .btn-primary {
+        padding: 14px 20px;
+        min-height: 52px;
+        font-size: var(--font-size-base);
+        touch-action: manipulation;
+    }
+
+    /* Mobile menu button properly sized */
+    .mobile-menu-btn {
+        width: 48px;
+        height: 48px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .mobile-menu-btn svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    /* Header left section with proper spacing */
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    /* Ensure avatar is touchable */
+    .avatar,
+    #headerAvatar {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    /* Table action buttons need to be visible and touchable */
+    .entries-table .action-buttons {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+
+    .entries-table .action-btn {
+        flex-shrink: 0;
+    }
+
+    /* Invoice actions properly spaced */
+    .invoice-actions {
+        gap: var(--spacing-md);
+        flex-wrap: wrap;
+    }
+
+    .invoice-actions .btn {
+        min-height: 48px;
+        flex: 1 1 calc(50% - 8px);
+    }
+
+    /* Filters - ensure dropdowns are touchable */
+    .filters-bar {
+        gap: var(--spacing-md);
+    }
+
+    .filter-select,
+    .filter-input {
+        min-height: 48px;
+        padding: 12px 16px;
+        cursor: pointer;
+    }
+
+    /* Clear filters button */
+    #clearFilters {
+        width: 100%;
+        min-height: 48px;
+    }
+
+    /* Client cards touchable */
+    .client-card {
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    .client-card .client-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .client-card .client-actions .action-btn {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+/* Fix hover states for touch devices - only apply hover on devices that support it */
+@media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary:hover {
+        background: var(--color-bg-hover);
+        border-color: var(--color-text-muted);
+    }
+
+    .btn-success:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .nav-link:hover {
+        background: var(--color-bg-hover);
+        color: var(--color-text-primary);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .invoice-history-item:hover {
+        background: var(--color-bg-hover);
+        transform: translateX(4px);
+    }
+
+    .action-btn.edit:hover {
+        background: var(--color-primary);
+        color: white;
+    }
+
+    .action-btn.delete:hover {
+        background: var(--color-danger);
+        color: white;
+    }
+}
+
+/* For touch devices, remove hover transforms that can cause issues */
+@media (hover: none) {
+
+    .btn:hover,
+    .stat-card:hover,
+    .invoice-history-item:hover {
+        transform: none;
+    }
+
+    /* Add active states for touch feedback instead */
+    .btn:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+    }
+
+    .action-btn:active {
+        transform: scale(0.95);
+        opacity: 0.85;
+    }
+
+    .nav-link:active {
+        background: var(--color-primary-light);
+    }
+
+    .stat-card:active {
+        box-shadow: var(--shadow-md);
+    }
+
+    .invoice-history-item:active {
+        background: var(--color-bg-hover);
+    }
+
+    .client-card:active {
+        transform: scale(0.99);
     }
 }
