@@ -841,13 +841,14 @@ class App {
 
         const entry = {
             date: document.getElementById('entryDate').value,
-            clientName: document.getElementById('entryClient').value,
+            client: document.getElementById('entryClient').value, // Fixed key: client (not clientName)
             description: document.getElementById('entryDescription').value,
             amount: parseFloat(document.getElementById('entryAmount').value),
             type: document.getElementById('entryType').value,
-            status: document.getElementById('entryStatus').value,
+            status: document.getElementById('entryStatus')?.value || 'pending', // Handle if hidden
             paymentMode: document.getElementById('entryPaymentMode').value,
-            created_by_name: formattedCreatedBy // Send manual name
+            created_by_name: formattedCreatedBy,
+            isPettyCash: document.getElementById('addToPettyCashToggle')?.checked || false
         };
 
         try {
