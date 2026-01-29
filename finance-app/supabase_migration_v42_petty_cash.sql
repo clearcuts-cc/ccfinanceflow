@@ -1,6 +1,11 @@
 -- 1. Alter finance_entries to support Petty Cash Allocations
--- This flag indicates that this expense entry is actually a 'deposit' into the Petty Cash fund
-ALTER TABLE finance_entries ADD COLUMN is_petty_cash boolean DEFAULT false;
+-- Safely add column only if it doesn't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='finance_entries' AND column_name='is_petty_cash') THEN
+        ALTER TABLE finance_entries ADD COLUMN is_petty_cash boolean DEFAULT false;
+    END IF;
+END $$;
 
 -- 2. Create table for Petty Cash Expenses (Spending from the fund)
 CREATE TABLE IF NOT EXISTS petty_cash_entries (
@@ -19,32 +24,38 @@ CREATE TABLE IF NOT EXISTS petty_cash_entries (
 ALTER TABLE petty_cash_entries ENABLE ROW LEVEL SECURITY;
 
 -- 4. RLS Policies
--- Admin can do everything
-CREATE POLICY "Admins can view all petty cash" ON petty_cash_entries FOR SELECT 
-USING (auth.uid() = admin_id OR auth.uid()::text = admin_id::text); -- Cast for safety if UUID handling varies
-
-CREATE POLICY "Admins can insert petty cash" ON petty_cash_entries FOR INSERT 
-WITH CHECK (auth.uid() = admin_id OR auth.uid()::text = admin_id::text);
-
-CREATE POLICY "Admins can delete petty cash" ON petty_cash_entries FOR DELETE 
-USING (auth.uid() = admin_id OR auth.uid()::text = admin_id::text);
-
--- Employees can View and Insert (Spend), but maybe not Delete (Audit trail)
--- We need to check if auth.uid() is an employee of admin_id
--- For simplicity in this simplified RLS model:
-CREATE POLICY "Employees can view their org's petty cash" ON petty_cash_entries FOR SELECT
+-- Combined Select Policy: Admin OR Employee
+DROP POLICY IF EXISTS "Users can view petty cash" ON petty_cash_entries;
+CREATE POLICY "Users can view petty cash" ON petty_cash_entries FOR SELECT 
 USING (
-    EXISTS (
-        SELECT 1 FROM users WHERE id = auth.uid() AND admin_id = petty_cash_entries.admin_id
+    ((select auth.uid()) = admin_id) OR  -- Is Admin
+    ((select auth.uid())::text = admin_id::text) OR -- UUID text fallback
+    EXISTS ( -- Is Employee
+        SELECT 1 FROM users WHERE id = (select auth.uid()) AND admin_id = petty_cash_entries.admin_id
     )
 );
 
-CREATE POLICY "Employees can add petty cash entries" ON petty_cash_entries FOR INSERT
+-- Combined Insert Policy: Admin OR Employee
+DROP POLICY IF EXISTS "Users can insert petty cash" ON petty_cash_entries;
+CREATE POLICY "Users can insert petty cash" ON petty_cash_entries FOR INSERT 
 WITH CHECK (
+    ((select auth.uid()) = admin_id) OR
+    ((select auth.uid())::text = admin_id::text) OR
     EXISTS (
-        SELECT 1 FROM users WHERE id = auth.uid() AND admin_id = petty_cash_entries.admin_id
+        SELECT 1 FROM users WHERE id = (select auth.uid()) AND admin_id = petty_cash_entries.admin_id
     )
 );
+
+-- Delete Policy: Admin Only
+DROP POLICY IF EXISTS "Admins can delete petty cash" ON petty_cash_entries;
+CREATE POLICY "Admins can delete petty cash" ON petty_cash_entries FOR DELETE 
+USING ((select auth.uid()) = admin_id OR (select auth.uid())::text = admin_id::text);
+
+-- Cleanup old separate policies if they exist (to be safe)
+DROP POLICY IF EXISTS "Admins can view all petty cash" ON petty_cash_entries;
+DROP POLICY IF EXISTS "Admins can insert petty cash" ON petty_cash_entries;
+DROP POLICY IF EXISTS "Employees can view their org's petty cash" ON petty_cash_entries;
+DROP POLICY IF EXISTS "Employees can add petty cash entries" ON petty_cash_entries;
 
 -- Grant permissions
 GRANT ALL ON petty_cash_entries TO authenticated;
