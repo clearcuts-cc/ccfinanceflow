@@ -705,6 +705,10 @@ table {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xs);
+    flex: 1;
+    /* Allow content to take available space */
+    min-width: 0;
+    /* Enable flex item truncation/wrapping */
 }
 
 .stat-label {
@@ -714,14 +718,13 @@ table {
 }
 
 .stat-value {
-    font-size: var(--font-size-2xl);
+    font-size: clamp(1.25rem, 2.5vw, var(--font-size-2xl));
+    /* Scale font on smaller screens */
     font-weight: 700;
     color: var(--color-text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
-    display: block;
+    word-break: break-word;
+    /* Allow break on very long numbers */
+    line-height: 1.2;
 }
 
 /* ==================== Chart Cards ==================== */
@@ -1852,9 +1855,16 @@ table {
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--color-border);
     display: flex;
+    flex-direction: column;
+    /* Stack vertically for better space usage */
     align-items: center;
+    /* Center content */
+    text-align: center;
+    /* Center text */
     gap: var(--spacing-md);
     transition: all 0.2s ease;
+    height: 100%;
+    /* Uniform height */
 }
 
 .employee-card:hover {
@@ -1863,30 +1873,37 @@ table {
 }
 
 .employee-avatar {
-    width: 50px;
-    height: 50px;
+    width: 64px;
+    /* Larger avatar */
+    height: 64px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    margin-bottom: var(--spacing-xs);
 }
 
 .employee-avatar span {
     color: white;
     font-weight: 600;
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-lg);
 }
 
 .employee-info {
     flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     min-width: 0;
+    /* Allow truncation */
 }
 
 .employee-name {
-    font-size: var(--font-size-base);
-    font-weight: 600;
+    font-size: var(--font-size-lg);
+    font-weight: 700;
     color: var(--color-text-primary);
     margin: 0 0 4px 0;
 }
@@ -1894,17 +1911,27 @@ table {
 .employee-email {
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
-    margin: 0 0 8px 0;
-    word-break: break-all;
+    margin: 0 0 12px 0;
+    word-break: break-word;
+    /* Wrap long emails cleanly */
+    overflow-wrap: break-word;
+    max-width: 100%;
+    line-height: 1.4;
 }
 
 .employee-status {
     display: inline-block;
+    margin-top: auto;
+    /* Push to bottom if needed */
 }
 
 .employee-actions {
     display: flex;
-    gap: var(--spacing-xs);
+    justify-content: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border-light);
 }
 
 /* ==================== Pending Approvals Section ==================== */
