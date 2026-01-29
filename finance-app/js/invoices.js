@@ -19,6 +19,15 @@ class InvoiceManager {
         this.bindEvents();
         await this.renderInvoiceHistory();
 
+        // Check permissions
+        const isAdmin = await dataLayer.isAdmin();
+
+        // Hide agency details edit form for employees
+        const agencyDetailsSection = document.querySelector('.invoice-form-section .form-section:first-of-type');
+        if (!isAdmin && agencyDetailsSection) {
+            agencyDetailsSection.style.display = 'none';
+        }
+
         // Check for saved login name
         const savedName = localStorage.getItem('lastLoginName') || '';
         const nameInput = document.getElementById('invoiceLoginName');
