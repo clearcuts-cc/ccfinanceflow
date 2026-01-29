@@ -553,11 +553,9 @@ class App {
             this.clearDashboardFilters();
         });
         // Year selectors for charts
-        document.getElementById('dashboardYearSelect').addEventListener('change', (e) => {
-            chartsManager.onYearChange(e.target.value, 'dashboard');
-        });
+        // Dashboard year select removed per request
 
-        document.getElementById('analyticsYearSelect').addEventListener('change', (e) => {
+        document.getElementById('analyticsYearSelect')?.addEventListener('change', (e) => {
             chartsManager.onYearChange(e.target.value, 'analytics');
         });
 

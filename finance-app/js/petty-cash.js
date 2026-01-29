@@ -37,15 +37,22 @@ class PettyCashManager {
         const clientSelect = document.getElementById('entryClient'); // In entry form
 
         if (typeSelect && toggleWrapper) {
-            typeSelect.addEventListener('change', (e) => {
-                if (e.target.value === 'expense') {
-                    toggleWrapper.classList.remove('hidden');
+            // Function to handle visibility
+            const updateToggleVisibility = () => {
+                if (typeSelect.value === 'expense') {
+                    toggleWrapper.style.display = 'flex';
                 } else {
-                    toggleWrapper.classList.add('hidden');
-                    toggleInput.checked = false; // Reset if switching to Income
+                    toggleWrapper.style.display = 'none';
+                    toggleInput.checked = false;
                     this.resetClientSelection(clientSelect);
                 }
-            });
+            };
+
+            typeSelect.addEventListener('change', updateToggleVisibility);
+
+            // Initial check (in case page loads with Expense selected)
+            // setTimeout to ensure DOM is ready? Just calling it safely.
+            updateToggleVisibility();
 
             // Toggle Behavior: When ON, visual feedback on Client Field
             toggleInput.addEventListener('change', (e) => {
