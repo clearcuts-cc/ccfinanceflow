@@ -484,6 +484,27 @@ class App {
                 toggleWrapper.style.display = typeSelect.value === 'expense' ? 'flex' : 'none';
             });
         }
+
+        // Auto-select "Petty Cash" client when toggle is ON
+        const toggleInput = document.getElementById('addToPettyCashToggle');
+        const clientSelect = document.getElementById('entryClient');
+        if (toggleInput && clientSelect) {
+            toggleInput.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    // Check availability
+                    let option = Array.from(clientSelect.options).find(opt => opt.value === 'Petty Cash');
+                    if (!option) {
+                        option = document.createElement('option');
+                        option.value = 'Petty Cash';
+                        option.text = 'Petty Cash';
+                        clientSelect.add(option);
+                    }
+                    clientSelect.value = 'Petty Cash';
+                } else {
+                    clientSelect.value = ''; // Reset
+                }
+            });
+        }
         closeModal.addEventListener('click', () => this.closeEntryModal());
         cancelEntry.addEventListener('click', () => this.closeEntryModal());
 
