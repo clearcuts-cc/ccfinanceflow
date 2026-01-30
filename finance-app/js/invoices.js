@@ -362,6 +362,8 @@ class InvoiceManager {
             invoiceNumber: document.getElementById('invoiceNumber').value,
             invoiceDate: document.getElementById('invoiceDate').value,
             dueDate: document.getElementById('invoiceDueDate').value,
+            paymentStatus: document.getElementById('invoicePaymentStatus')?.value || 'pending',
+            clientId: document.getElementById('invoiceClientSelect')?.value || null,
 
             // Services
             services,
