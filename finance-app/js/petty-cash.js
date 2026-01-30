@@ -170,17 +170,20 @@ const pettyCashManager = {
         }
     },
 
-    filterAndRender() {
+    async filterAndRender() {
+        const isAdmin = await dataLayer.isAdmin();
         // Get filter values
         const statusFilter = document.getElementById('pcFilterStatus')?.value || '';
         const startDate = document.getElementById('pcFilterStartDate')?.value || '';
         const endDate = document.getElementById('pcFilterEndDate')?.value || '';
 
         const displayedEntries = this.entries.filter(entry => {
+            const status = entry.status || 'approved';
+
+
+
             let matchesStatus = true;
             if (statusFilter) {
-                // Handle legacy null status as 'approved'
-                const status = entry.status || 'approved';
                 matchesStatus = status === statusFilter;
             }
 
