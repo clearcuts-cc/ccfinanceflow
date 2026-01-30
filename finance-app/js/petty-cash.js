@@ -195,7 +195,7 @@ const pettyCashManager = {
             return matchesStatus && matchesDate;
         });
 
-        this.calculateBalance(displayedEntries);
+        this.calculateBalance(this.entries);
         this.render(displayedEntries);
     },
 
@@ -445,7 +445,11 @@ const pettyCashManager = {
             if (error) throw error;
 
             showToast('Entry deleted', 'success');
-            await this.loadData();
+
+            // Optimistic update
+            this.entries = this.entries.filter(e => e.id !== id);
+            this.filterAndRender();
+
         } catch (error) {
             console.error('Error deleting entry:', error);
             showToast('Failed to delete entry', 'error');
