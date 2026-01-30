@@ -230,9 +230,6 @@ class InvoiceManager {
             this.saveInvoice();
         });
 
-        // Email invoice
-        document.getElementById('emailInvoiceBtn')?.addEventListener('click', () => this.sendEmail());
-
         // Reset invoice
         document.getElementById('resetInvoiceBtn').addEventListener('click', () => this.resetForm());
 
