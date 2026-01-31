@@ -92,6 +92,16 @@ class App {
             window.location.href = 'login.html';
             return;
         }
+
+        // Deep validation: check if user still exists in database
+        const isValid = await dataLayer.validateSession();
+        if (!isValid) {
+            console.warn('User no longer exists in database. Logging out.');
+            await supabaseClient.auth.signOut();
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+            return;
+        }
         try {
             // Initialize database
             await dataLayer.init();
@@ -758,7 +768,7 @@ class App {
 
         // Clear data
         document.getElementById('clearDataBtn').addEventListener('click', async () => {
-            if (!confirm('Are you sure you want to delete all data? This cannot be undone.')) return;
+            if (!(await this.showConfirmationModal('Clear All Data', 'Are you sure you want to delete all data? This cannot be undone.'))) return;
 
             await dataLayer.clearAll();
             await this.refreshData();
@@ -1277,7 +1287,7 @@ class App {
                     const type = btn.dataset.type;
                     try {
                         if (type === 'delete') {
-                            if (!confirm('Confirm deletion of this entry? This cannot be undone.')) return;
+                            if (!(await this.showConfirmationModal('Confirm Deletion', 'Confirm deletion of this entry? This cannot be undone.'))) return;
                             await dataLayer.deleteEntry(id); // Admin delete = actual delete
                             showToast('Entry deleted successfully', 'success');
                         } else {
@@ -1341,33 +1351,6 @@ class App {
     }
 }
 
-/**
- * Show toast notification
- */
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toastContainer');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `
-        <span class="toast-message">${message}</span>
-        <button class="toast-close" aria-label="Close">×</button>
-    `;
-
-    container.appendChild(toast);
-
-    // Close button
-    toast.querySelector('.toast-close').addEventListener('click', () => {
-        toast.remove();
-    });
-
-    // Auto remove after 4 seconds
-    setTimeout(() => {
-        if (toast.parentElement) {
-            toast.style.animation = 'slideIn 0.3s ease reverse';
-            setTimeout(() => toast.remove(), 300);
-        }
-    }, 4000);
-}
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {

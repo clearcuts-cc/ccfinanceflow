@@ -70,6 +70,7 @@ class ClientsManager {
         const client = {
             name: document.getElementById('clientName').value.trim(),
             phone: document.getElementById('clientPhone').value.trim(),
+            email: document.getElementById('clientEmail').value.trim(),
             address: document.getElementById('clientAddress').value.trim(),
             approval_status: initialStatus,
             created_by_name: `${roleLabel} - ${userName}`
@@ -117,30 +118,52 @@ class ClientsManager {
         }
     }
 
-    /**
-     * Approve a pending client
-     */
     async approveClient(id) {
         try {
-            await dataLayer.updateClient(id, { approval_status: 'approved' });
-            showToast('Client approved successfully', 'success');
+            const client = this.pendingClients.find(c => c.id === id);
+            if (!client) return;
+
+            if (client.deletion_requested) {
+                await dataLayer.deleteClient(id); // Admin confirm delete
+                showToast('Client deletion approved', 'success');
+            } else if (client.edit_requested) {
+                await dataLayer.approveClientEdit(id);
+                showToast('Client edit approved', 'success');
+            } else {
+                await dataLayer.updateClient(id, { approval_status: 'approved' });
+                showToast('Client creation approved', 'success');
+            }
         } catch (error) {
             console.error('Error approving client:', error);
-            showToast('Failed to approve client', 'error');
+            showToast('Failed to approve request', 'error');
         }
     }
 
     /**
-     * Decline a pending client (Deletes it)
+     * Decline a pending client request
      */
     async declineClient(id) {
-        if (!(await app.showConfirmationModal('Decline Client', 'Decline and remove this client request?'))) return;
         try {
-            await dataLayer.deleteClient(id);
-            showToast('Client request declined', 'info');
+            const client = this.pendingClients.find(c => c.id === id);
+            if (!client) return;
+
+            const action = client.deletion_requested ? 'deletion' : (client.edit_requested ? 'edit' : 'creation');
+
+            if (!(await app.showConfirmationModal('Decline Request', `Are you sure you want to decline this client ${action} request?`))) return;
+
+            if (client.deletion_requested) {
+                await dataLayer.declineClientDeletion(id);
+                showToast('Deletion request declined', 'info');
+            } else if (client.edit_requested) {
+                await dataLayer.declineClientEdit(id);
+                showToast('Edit request declined', 'info');
+            } else {
+                await dataLayer.deleteClient(id); // Decline new creation = delete
+                showToast('Client creation declined', 'info');
+            }
         } catch (error) {
             console.error('Error declining client:', error);
-            showToast('Failed to decline client', 'error');
+            showToast('Failed to decline request', 'error');
         }
     }
 
@@ -288,13 +311,35 @@ class ClientsManager {
         const initials = this.getInitials(client.name);
 
         let actionsHtml = '';
+        let badgeHtml = '';
+        let cardStyle = '';
+
         if (isPending) {
+            let label = 'Pending Approval';
+            if (client.deletion_requested) label = 'Deletion Requested';
+            else if (client.edit_requested) label = 'Edit Requested';
+
+            badgeHtml = `<span class="badge ${client.deletion_requested ? 'badge-danger' : 'badge-warning'}" style="margin-bottom: 8px; display: inline-block;">${label}</span>`;
+            cardStyle = `border: 1px solid ${client.deletion_requested ? 'var(--color-danger)' : 'var(--color-warning)'}; background: var(--color-bg-secondary);`;
+
             actionsHtml = `
                 <div class="client-card-actions two-buttons">
                      <button class="btn btn-success btn-sm approve-client full-width" data-id="${client.id}">Approve</button>
                      <button class="btn btn-danger btn-sm decline-client full-width" data-id="${client.id}">Decline</button>
                 </div>
             `;
+
+            if (client.edit_requested && client.pending_changes) {
+                const changes = client.pending_changes;
+                badgeHtml += `
+                    <div class="pending-changes-preview" style="font-size: 0.7rem; color: var(--color-text-muted); padding: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; margin-bottom: 8px;">
+                        <strong>New Name:</strong> ${changes.name}<br>
+                        <strong>New Phone:</strong> ${changes.phone || 'N/A'}<br>
+                        <strong>New Email:</strong> ${changes.email || 'N/A'}<br>
+                        <strong>New Address:</strong> ${changes.address ? 'Updated' : 'N/A'}
+                    </div>
+                `;
+            }
         } else {
             actionsHtml = `
                 <div class="client-card-actions">
@@ -305,10 +350,11 @@ class ClientsManager {
         }
 
         return `
-            <div class="client-card ${isPending ? 'pending-card' : ''}" data-id="${client.id}" style="${isPending ? 'border: 1px solid var(--color-warning); background: var(--color-bg-secondary);' : ''}">
+            <div class="client-card ${isPending ? 'pending-card' : ''}" data-id="${client.id}" style="${cardStyle}">
                 <div class="client-card-header">
-                    <div class="client-avatar" style="${isPending ? 'background: var(--color-warning);' : ''}">${initials}</div>
+                    <div class="client-avatar" style="${isPending && !client.deletion_requested ? 'background: var(--color-warning);' : (isPending ? 'background: var(--color-danger);' : '')}">${initials}</div>
                     <div class="client-info">
+                        ${badgeHtml}
                         <div class="client-name">${client.name}</div>
                         ${client.phone ? `
                         <div class="client-phone">
@@ -316,6 +362,15 @@ class ClientsManager {
                                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                             </svg>
                             ${client.phone}
+                        </div>
+                        ` : ''}
+                        ${client.email ? `
+                        <div class="client-phone" style="margin-top: 2px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                <polyline points="22,6 12,13 2,6"/>
+                            </svg>
+                            ${client.email}
                         </div>
                         ` : ''}
                         ${isPending ? `<div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 4px;">By: ${client.created_by_name || 'Unknown'}</div>` : ''}
@@ -360,6 +415,7 @@ class ClientsManager {
             document.getElementById('clientId').value = client.id;
             document.getElementById('clientName').value = client.name;
             document.getElementById('clientPhone').value = client.phone;
+            document.getElementById('clientEmail').value = client.email || '';
             document.getElementById('clientAddress').value = client.address || '';
         } else {
             title.textContent = 'Add Client';

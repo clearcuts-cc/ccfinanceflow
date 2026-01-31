@@ -108,7 +108,7 @@ class NotificationsManager {
             return;
         }
 
-        if (!confirm(`Are you sure you want to approve password reset for ${email}? This will send them a password reset email.`)) return;
+        if (!(await app.showConfirmationModal('Approve Reset', `Are you sure you want to approve password reset for ${email}? This will send them a password reset email.`))) return;
 
         try {
             // Trigger the reset email as Admin

@@ -355,7 +355,7 @@ class EmployeesManager {
             `• The data will still show "${empName}" as the creator\n\n` +
             `This action cannot be undone.`;
 
-        if (!confirm(confirmMessage)) {
+        if (!(await app.showConfirmationModal('Delete Employee', confirmMessage))) {
             return;
         }
 
@@ -373,7 +373,7 @@ class EmployeesManager {
      * Send password reset link manually
      */
     async sendResetLink(email) {
-        if (!confirm(`Send password reset link to ${email}?`)) return;
+        if (!(await app.showConfirmationModal('Send Reset Link', `Send password reset link to ${email}?`))) return;
 
         try {
             const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {

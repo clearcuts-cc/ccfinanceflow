@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
             errorDiv.textContent = msg;
             errorDiv.style.display = 'block';
         } else {
-            alert(msg);
+            showToast(msg, 'error');
         }
     }
 
@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         signupForm.reset();
                         setLoading(false);
                     } else {
-                        alert('Signup successful! Please check your email to verify your account.');
+                        showToast('Signup successful! Please check your email to verify your account.', 'success');
                         window.location.href = 'login.html';
                     }
                 }
@@ -216,62 +216,61 @@ document.addEventListener('DOMContentLoaded', () => {
         if (forgotForm) {
             forgotForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const resetEmail = document.getElementById('resetEmail').value;
+                const resetEmail = document.getElementById('resetEmail').value.trim();
+
+                if (!resetEmail) {
+                    showToast('Please enter your email', 'error');
+                    return;
+                }
 
                 if (sendResetBtn) {
                     sendResetBtn.disabled = true;
-                    sendResetBtn.textContent = 'Sending...';
+                    sendResetBtn.textContent = 'Checking account...';
                 }
 
                 try {
-                    // Check if email belongs to an employee using our new secure RPC
+                    // 1. Check if email belongs to an employee
                     const { data: isEmployee, error: checkError } = await supabaseClient
                         .rpc('is_employee_email', { check_email: resetEmail });
 
                     if (checkError) {
-                        console.warn('Employee check failed:', checkError);
-                        // Continue cautiously or handle error
+                        console.warn('Employee check error:', checkError);
                     }
 
-                    if (isEmployee) {
-                        try {
-                            const { data: sent, error: notifError } = await supabaseClient
-                                .rpc('request_employee_password_reset_notification', { target_email: resetEmail });
+                    if (isEmployee === true) {
+                        // 2. It's an employee - notify admin instead of resetting
+                        sendResetBtn.textContent = 'Notifying Admin...';
 
-                            if (notifError) {
-                                console.error('Notification failed:', notifError);
-                                alert("We couldn't notify your admin automatically. Please contact them directly.");
-                            } else {
-                                alert("A request has been sent to your Admin to reset your password. Please wait for them to provide new credentials.");
-                                forgotModal.classList.remove('active');
-                                forgotForm.reset();
-                            }
-                        } catch (err) {
-                            console.error('RPC Error:', err);
-                            alert("Something went wrong. Please contact your admin.");
-                        } finally {
-                            if (sendResetBtn) {
-                                sendResetBtn.disabled = false;
-                                sendResetBtn.textContent = 'Send Reset Link';
-                            }
+                        const { data: notified, error: notifError } = await supabaseClient
+                            .rpc('request_employee_password_reset_notification', { target_email: resetEmail });
+
+                        if (notifError) {
+                            console.error('Notification failed:', notifError);
+                            showToast("Error sending notification. Please contact your admin directly.", 'error');
+                        } else {
+                            showToast("A request has been sent to your Admin. Please wait for them to reset your password.", 'info');
+                            forgotModal.classList.remove('active');
+                            forgotForm.reset();
                         }
                         return;
                     }
 
+                    // 3. Not an employee (or admin) - proceed with standard reset
+                    sendResetBtn.textContent = 'Sending Link...';
                     const { error } = await supabaseClient.auth.resetPasswordForEmail(resetEmail, {
-                        redirectTo: window.location.origin + '/verify.html'
+                        redirectTo: window.location.origin + '/reset-password.html'
                     });
 
                     if (error) {
-                        alert(error.message);
+                        showToast(error.message, 'error');
                     } else {
-                        alert('Password reset link sent! Check your email.');
+                        showToast('Password reset link sent! Check your email.', 'success');
                         forgotModal.classList.remove('active');
                         forgotForm.reset();
                     }
                 } catch (err) {
                     console.error('Reset password error:', err);
-                    alert('Network error. Please try again.');
+                    showToast('Something went wrong. Please try again.', 'error');
                 } finally {
                     if (sendResetBtn) {
                         sendResetBtn.disabled = false;

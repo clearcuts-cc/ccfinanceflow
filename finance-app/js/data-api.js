@@ -992,28 +992,138 @@ class DataLayerAPI {
     }
 
     async updateClient(id, client) {
+        const isAdmin = await this.isAdmin();
+        const userId = await this.getCurrentUserId();
+
+        if (isAdmin) {
+            // Admin can update directly
+            const { data, error } = await supabaseClient
+                .from('clients')
+                .update({
+                    ...client,
+                    edit_requested: false,
+                    pending_changes: null,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) this.handleError(error, 'Update client');
+            this.notifyListeners(DATA_STORES.CLIENTS);
+            return data;
+        } else {
+            // Employee requests update
+            const { data, error } = await supabaseClient
+                .from('clients')
+                .update({
+                    edit_requested: true,
+                    edit_requested_by: userId,
+                    pending_changes: client,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) this.handleError(error, 'Request client update');
+            this.notifyListeners(DATA_STORES.CLIENTS);
+            return data;
+        }
+    }
+
+    async deleteClient(id) {
+        const isAdmin = await this.isAdmin();
+        const userId = await this.getCurrentUserId();
+
+        if (isAdmin) {
+            // Admin can delete immediately
+            const { error } = await supabaseClient
+                .from('clients')
+                .delete()
+                .eq('id', id);
+
+            if (error) this.handleError(error, 'Delete client');
+        } else {
+            // Employee requests deletion
+            const { error } = await supabaseClient
+                .from('clients')
+                .update({
+                    deletion_requested: true,
+                    deletion_requested_by: userId
+                })
+                .eq('id', id);
+
+            if (error) this.handleError(error, 'Request client deletion');
+        }
+
+        this.notifyListeners(DATA_STORES.CLIENTS);
+        return true;
+    }
+
+    /**
+     * Approve a client edit request (Admin only)
+     */
+    async approveClientEdit(id) {
+        const { data: client } = await supabaseClient
+            .from('clients')
+            .select('pending_changes')
+            .eq('id', id)
+            .single();
+
+        if (!client || !client.pending_changes) {
+            throw new Error('No pending changes found for this client');
+        }
+
         const { data, error } = await supabaseClient
             .from('clients')
             .update({
-                ...client,
+                ...client.pending_changes,
+                edit_requested: false,
+                edit_requested_by: null,
+                pending_changes: null,
                 updated_at: new Date().toISOString()
             })
             .eq('id', id)
             .select()
             .single();
 
-        if (error) this.handleError(error, 'Update client');
+        if (error) this.handleError(error, 'Approve client edit');
         this.notifyListeners(DATA_STORES.CLIENTS);
         return data;
     }
 
-    async deleteClient(id) {
+    /**
+     * Decline a client edit request (Admin only)
+     */
+    async declineClientEdit(id) {
         const { error } = await supabaseClient
             .from('clients')
-            .delete()
+            .update({
+                edit_requested: false,
+                edit_requested_by: null,
+                pending_changes: null
+            })
             .eq('id', id);
 
-        if (error) this.handleError(error, 'Delete client');
+        if (error) this.handleError(error, 'Decline client edit');
+        this.notifyListeners(DATA_STORES.CLIENTS);
+        return true;
+    }
+
+    /**
+     * Decline a client deletion request (Admin only)
+     */
+    async declineClientDeletion(id) {
+        const { error } = await supabaseClient
+            .from('clients')
+            .update({
+                deletion_requested: false,
+                deletion_requested_by: null
+            })
+            .eq('id', id);
+
+        if (error) this.handleError(error, 'Decline client deletion');
         this.notifyListeners(DATA_STORES.CLIENTS);
         return true;
     }
@@ -1056,7 +1166,7 @@ class DataLayerAPI {
             .from('clients')
             .select('*')
             .eq('admin_id', adminId)
-            .eq('approval_status', 'pending')
+            .or('approval_status.eq.pending,deletion_requested.eq.true,edit_requested.eq.true')
             .order('created_at', { ascending: false });
 
         if (error) this.handleError(error, 'Get pending clients');
@@ -1270,18 +1380,56 @@ class DataLayerAPI {
         return data;
     }
 
-    /**
-     * Delete employee
-     */
     async deleteEmployee(id) {
+        // Get user_id first to also remove from users table
+        const { data: employee } = await supabaseClient
+            .from('employees')
+            .select('user_id')
+            .eq('id', id)
+            .single();
+
+        const userId = employee?.user_id;
+
+        // Delete from employees table
         const { error } = await supabaseClient
             .from('employees')
             .delete()
             .eq('id', id);
 
         if (error) this.handleError(error, 'Delete employee');
+
+        // Also delete from users table if linked
+        if (userId) {
+            await supabaseClient
+                .from('users')
+                .delete()
+                .eq('id', userId);
+        }
+
         this.notifyListeners(DATA_STORES.EMPLOYEES);
         return true;
+    }
+
+    /**
+     * Validate current session against database
+     * Returns false if user no longer exists in users table
+     */
+    async validateSession() {
+        const userId = await this.getCurrentUserId();
+        if (!userId) return false;
+
+        const { data, error } = await supabaseClient
+            .from('users')
+            .select('id')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (error) {
+            console.error('Session validation error:', error);
+            return true; // Assume valid on network error to avoid false logouts
+        }
+
+        return !!data;
     }
 
     // ==================== Settings ====================

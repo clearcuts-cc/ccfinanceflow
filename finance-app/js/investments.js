@@ -370,7 +370,7 @@ class InvestmentsManager {
     }
 
     async approve(id) {
-        if (!confirm('Approve this investment?')) return;
+        if (!(await app.showConfirmationModal('Approve Investment', 'Approve this investment?'))) return;
         try {
             showToast('Processing approval...', 'info');
             await dataLayer.updateInvestmentStatus(id, 'approved');
@@ -385,7 +385,7 @@ class InvestmentsManager {
     }
 
     async decline(id) {
-        if (!confirm('Decline this investment?')) return;
+        if (!(await app.showConfirmationModal('Decline Investment', 'Decline this investment?'))) return;
         try {
             showToast('Processing request...', 'info');
             await dataLayer.updateInvestmentStatus(id, 'declined');
@@ -399,7 +399,7 @@ class InvestmentsManager {
     }
 
     async delete(id) {
-        if (!confirm('Delete this investment record?')) return;
+        if (!(await app.showConfirmationModal('Delete Investment', 'Delete this investment record?'))) return;
         try {
             await dataLayer.deleteInvestment(id);
             showToast('Deleted', 'success');
