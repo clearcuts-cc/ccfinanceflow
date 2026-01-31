@@ -22,16 +22,57 @@ class InvoiceManager {
         // Check permissions
         const isAdmin = await dataLayer.isAdmin();
 
-        // Hide agency details edit form for employees
-        const agencyDetailsSection = document.querySelector('.invoice-form-section .form-section:first-of-type');
-        if (!isAdmin && agencyDetailsSection) {
-            agencyDetailsSection.style.display = 'none';
+        // Make agency details read-only for employees instead of hiding them
+        const agencySection = document.getElementById('invoiceAgencySection') ||
+            document.querySelector('.invoice-form-section .form-section:first-of-type');
+
+        if (agencySection) {
+            // Always ensure it is visible (reversing any previous 'none' settings)
+            agencySection.style.display = 'block';
+
+            if (!isAdmin) {
+                agencySection.querySelectorAll('input, textarea').forEach(input => {
+                    input.readOnly = true;
+                    input.style.backgroundColor = 'var(--color-bg-secondary)';
+                    input.style.cursor = 'not-allowed';
+                });
+
+                const logoPreview = agencySection.querySelector('.logo-preview');
+                if (logoPreview) {
+                    logoPreview.style.cursor = 'default';
+                    const uploadText = logoPreview.querySelector('span');
+                    if (uploadText) uploadText.textContent = 'Agency Logo';
+                }
+            } else {
+                // For admin, ensure it's editable (if reset didn't do it)
+                agencySection.querySelectorAll('input, textarea').forEach(input => {
+                    input.readOnly = false;
+                    input.style.backgroundColor = '';
+                    input.style.cursor = '';
+                });
+            }
         }
 
-        // Check for saved login name
-        const savedName = localStorage.getItem('lastLoginName') || '';
+        // Automatically fill the "Created By" name from the user's profile
         const nameInput = document.getElementById('invoiceLoginName');
-        if (nameInput) nameInput.value = savedName;
+        if (nameInput) {
+            // Priority 1: Current profile name if loaded
+            if (window.profileManager && window.profileManager.currentUser && window.profileManager.currentUser.name && window.profileManager.currentUser.name !== 'User') {
+                nameInput.value = window.profileManager.currentUser.name;
+            }
+            // Priority 2: Stored user profile from localStorage
+            else {
+                const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                if (storedUser.name && storedUser.name !== 'User') {
+                    nameInput.value = storedUser.name;
+                }
+                // Priority 3: Fallback to last manually entered name
+                else {
+                    const savedName = localStorage.getItem('lastLoginName') || '';
+                    nameInput.value = savedName;
+                }
+            }
+        }
     }
 
     /**
@@ -186,7 +227,14 @@ class InvoiceManager {
         const logoPreview = document.getElementById('logoPreview');
         const logoInput = document.getElementById('agencyLogo');
 
-        logoPreview.addEventListener('click', () => logoInput.click());
+        logoPreview.addEventListener('click', async () => {
+            const isAdmin = await dataLayer.isAdmin();
+            if (isAdmin) {
+                logoInput.click();
+            } else {
+                showToast('Only admins can change agency logo', 'info');
+            }
+        });
         logoInput.addEventListener('change', (e) => this.handleLogoUpload(e));
 
         // Add service row
