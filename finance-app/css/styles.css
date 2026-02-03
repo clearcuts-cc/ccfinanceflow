@@ -2399,6 +2399,206 @@ table {
     border-color: var(--color-danger-light);
 }
 
+/* ==================== Data Management Section ==================== */
+.data-management-card {
+    max-width: 100%;
+}
+
+.data-management-card h3 {
+    display: flex;
+    align-items: center;
+    font-size: var(--font-size-xl);
+}
+
+.data-management-card h3 svg {
+    flex-shrink: 0;
+}
+
+.data-management-section {
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-lg);
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+}
+
+.data-management-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-header-inline {
+    margin-bottom: var(--spacing-lg);
+}
+
+.section-header-inline h4 {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-xs);
+    display: flex;
+    align-items: center;
+}
+
+.section-header-inline h4 svg {
+    flex-shrink: 0;
+}
+
+.section-description {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+/* Export Controls Grid */
+.export-controls-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.export-control-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    align-items: end;
+}
+
+.export-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.export-control-group label {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.date-range-group {
+    grid-column: 1 / -1;
+}
+
+.date-range-inputs {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.date-range-inputs input {
+    flex: 1;
+    min-width: 150px;
+}
+
+.date-separator {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+/* Export Action Row */
+.export-action-row {
+    display: flex;
+    justify-content: center;
+    padding-top: var(--spacing-md);
+    margin-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+}
+
+.btn-export {
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+}
+
+.btn-export svg {
+    flex-shrink: 0;
+}
+
+/* Import Section */
+.import-section {
+    background: rgba(59, 130, 246, 0.05);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.import-controls {
+    display: flex;
+    justify-content: center;
+}
+
+.import-controls .btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.import-controls .btn svg {
+    flex-shrink: 0;
+}
+
+/* Danger Section */
+.danger-section {
+    background: rgba(239, 68, 68, 0.05);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.danger-section .section-header-inline h4 {
+    color: var(--color-danger);
+}
+
+.danger-section .section-description {
+    color: var(--color-danger);
+}
+
+.danger-controls {
+    display: flex;
+    justify-content: center;
+}
+
+.danger-controls .btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.danger-controls .btn svg {
+    flex-shrink: 0;
+}
+
+/* Responsive adjustments for data management */
+@media (max-width: 768px) {
+    .export-control-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .date-range-group {
+        grid-column: 1;
+    }
+    
+    .date-range-inputs {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .date-range-inputs input {
+        width: 100%;
+    }
+    
+    .export-action-row,
+    .import-controls,
+    .danger-controls {
+        justify-content: stretch;
+    }
+    
+    .btn-export,
+    .import-controls .btn,
+    .danger-controls .btn {
+        width: 100%;
+    }
+}
+
 /* ==================== Toast Notifications ==================== */
 .toast-container {
     position: fixed;

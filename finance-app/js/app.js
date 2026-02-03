@@ -748,6 +748,27 @@ class App {
             }
         });
 
+        // Clear export filters
+        const clearExportFiltersBtn = document.getElementById('clearExportFilters');
+        if (clearExportFiltersBtn) {
+            clearExportFiltersBtn.addEventListener('click', () => {
+                // Reset all export filter fields
+                const exportDataType = document.getElementById('exportDataType');
+                const exportStartDate = document.getElementById('exportStartDate');
+                const exportEndDate = document.getElementById('exportEndDate');
+                const exportMonth = document.getElementById('exportMonth');
+                const exportYear = document.getElementById('exportYear');
+
+                if (exportDataType) exportDataType.value = 'all';
+                if (exportStartDate) exportStartDate.value = '';
+                if (exportEndDate) exportEndDate.value = '';
+                if (exportMonth) exportMonth.value = '';
+                if (exportYear) exportYear.value = '';
+
+                showToast('Export filters cleared', 'success');
+            });
+        }
+
         // Import data
         const importInput = document.getElementById('importDataInput');
         document.getElementById('importDataBtn').addEventListener('click', () => importInput.click());
