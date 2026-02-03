@@ -4536,77 +4536,136 @@ table {
         height: 24px;
     }
 
-    /* Header left section with proper spacing */
-    .header-left {
-        display: flex;
+    /* ==================== Mobile Excellence Refinements ==================== */
+
+    /* Stats Grid - Horizontal Scroll with Snap */
+    .stats-grid {
+        display: flex !important;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        padding: 5px 5px 15px 5px !important;
+        margin-left: -5px;
+        margin-right: -5px;
+        scroll-snap-type: x mandatory;
+        gap: 12px !important;
+        scrollbar-width: none;
+        /* Hide for Clean look */
+    }
+
+    .stats-grid::-webkit-scrollbar {
+        display: none;
+    }
+
+    .stat-card {
+        flex: 0 0 220px !important;
+        scroll-snap-align: center;
+        padding: 16px !important;
+        border-radius: 16px !important;
+    }
+
+    /* Charts Grid */
+    .dashboard-charts {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+    }
+
+    /* Table Responsiveness - Card Style */
+    .recent-transactions table,
+    .recent-transactions thead,
+    .recent-transactions tbody,
+    .recent-transactions th,
+    .recent-transactions td,
+    .recent-transactions tr,
+    .entries-table table,
+    .entries-table thead,
+    .entries-table tbody,
+    .entries-table th,
+    .entries-table td,
+    .entries-table tr {
+        display: block !important;
+    }
+
+    .recent-transactions thead,
+    .entries-table thead {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    .recent-transactions tr,
+    .entries-table tr {
+        border: 1px solid var(--color-border);
+        border-radius: 16px;
+        margin-bottom: 16px;
+        background: var(--color-bg-card);
+        padding: 12px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .recent-transactions td,
+    .entries-table td {
+        border: none !important;
+        position: relative;
+        padding-left: 45% !important;
+        text-align: right !important;
+        min-height: 36px;
+        display: flex !important;
         align-items: center;
-        gap: var(--spacing-sm);
+        justify-content: flex-end;
     }
 
-    /* Ensure avatar is touchable */
-    .avatar,
-    #headerAvatar {
-        width: 44px;
-        height: 44px;
-        min-width: 44px;
-        cursor: pointer;
-        touch-action: manipulation;
+    .recent-transactions td::before,
+    .entries-table td::before {
+        position: absolute;
+        left: 12px;
+        width: 40%;
+        white-space: nowrap;
+        text-align: left;
+        font-weight: 700;
+        color: var(--color-text-secondary);
+        font-size: 13px;
+        content: attr(data-label);
     }
 
-    /* Table action buttons need to be visible and touchable */
-    .entries-table .action-buttons {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 8px;
-    }
-
-    .entries-table .action-btn {
-        flex-shrink: 0;
-    }
-
-    /* Invoice actions properly spaced */
-    .invoice-actions {
-        gap: var(--spacing-md);
-        flex-wrap: wrap;
-    }
-
-    .invoice-actions .btn {
-        min-height: 48px;
-        flex: 1 1 calc(50% - 8px);
-    }
-
-    /* Filters - ensure dropdowns are touchable */
+    /* Filters Bar - Column Stack */
     .filters-bar {
-        gap: var(--spacing-md);
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px !important;
+        gap: 12px !important;
     }
 
-    .filter-select,
-    .filter-input {
-        min-height: 48px;
-        padding: 12px 16px;
-        cursor: pointer;
+    .filter-group {
+        width: 100% !important;
     }
 
-    /* Clear filters button */
-    #clearFilters {
+    .filter-group label {
+        margin-bottom: 4px;
+    }
+
+    /* Action Bar (Top of pages) */
+    .action-bar {
+        padding: 0 0 16px 0 !important;
+    }
+
+    .action-bar .btn {
         width: 100%;
-        min-height: 48px;
     }
 
-    /* Client cards touchable */
-    .client-card {
-        cursor: pointer;
-        touch-action: manipulation;
+    /* Settings Export Item */
+    .setting-item.export-item {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px;
     }
 
-    .client-card .client-actions {
+    .export-actions {
         display: flex;
         gap: 8px;
     }
 
-    .client-card .client-actions .action-btn {
-        width: 44px;
-        height: 44px;
+    .export-select {
+        flex: 1;
     }
 }
 
@@ -4639,7 +4698,7 @@ table {
 
     .invoice-history-item:hover {
         background: var(--color-bg-hover);
-        transform: translateX(4px);
+        transform: translateX(1px);
     }
 
     .action-btn.edit:hover {
@@ -4650,6 +4709,41 @@ table {
     .action-btn.delete:hover {
         background: var(--color-danger);
         color: white;
+    }
+}
+
+@media (max-width: 768px) {
+
+    /* Card Grids - Single Column on Mobile */
+    .clients-grid,
+    .employees-list,
+    .pending-clients-grid {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+    }
+
+    .client-card,
+    .employee-card {
+        margin-right: 0 !important;
+        width: 100% !important;
+    }
+
+    /* Modal spacing fixes */
+    .modal {
+        width: 95% !important;
+        max-height: 90vh !important;
+        margin: 10px auto !important;
+        padding: 20px !important;
+    }
+
+    .modal-actions {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    .modal-actions button {
+        width: 100% !important;
     }
 }
 

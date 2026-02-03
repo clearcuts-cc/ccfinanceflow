@@ -731,15 +731,21 @@ class App {
 
         // Export data
         document.getElementById('exportDataBtn').addEventListener('click', async () => {
+            const format = document.getElementById('exportFormat').value;
             const data = await dataLayer.exportData();
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `financeflow_backup_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('Data exported successfully', 'success');
+            const dateStr = new Date().toISOString().split('T')[0];
+
+            if (format === 'json') {
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                this.downloadBlob(blob, `financeflow_backup_${dateStr}.json`);
+                showToast('JSON backup exported successfully', 'success');
+            } else if (format === 'csv') {
+                this.exportToCSV(data, `financeflow_data_${dateStr}.csv`);
+                showToast('CSV data exported successfully', 'success');
+            } else if (format === 'pdf') {
+                this.exportToPDF(data, `financeflow_report_${dateStr}.pdf`);
+                showToast('PDF report exported successfully', 'success');
+            }
         });
 
         // Import data
@@ -1042,15 +1048,15 @@ class App {
 
         tbody.innerHTML = recent.map(entry => `
             <tr>
-                <td>${formatDate(entry.date)}</td>
-                <td>${entry.clientName}</td>
-                <td>${entry.description || '-'}</td>
-                <td style="font-weight: 600; color: ${entry.type === 'income' ? 'var(--color-success)' : 'var(--color-danger)'}">
+                <td data-label="Date">${formatDate(entry.date)}</td>
+                <td data-label="Client">${entry.clientName}</td>
+                <td data-label="Description">${entry.description || '-'}</td>
+                <td data-label="Amount" style="font-weight: 600; color: ${entry.type === 'income' ? 'var(--color-success)' : 'var(--color-danger)'}">
                     ${entry.type === 'income' ? '+' : '-'}${formatCurrency(entry.amount, currency)}
                 </td>
-                <td><span class="badge badge-${entry.type}">${entry.type}</span></td>
-                <td><span class="badge badge-${entry.status}">${entry.status}</span></td>
-                <td>${entry.createdByName || '-'}</td>
+                <td data-label="Type"><span class="badge badge-${entry.type}">${entry.type}</span></td>
+                <td data-label="Status"><span class="badge badge-${entry.status}">${entry.status}</span></td>
+                <td data-label="Created By">${entry.createdByName || '-'}</td>
             </tr>
         `).join('');
     }
@@ -1073,22 +1079,22 @@ class App {
         emptyState.style.display = 'none';
         tbody.innerHTML = entries.map(entry => `
             <tr>
-                <td>${formatDate(entry.date)}</td>
-                <td>${entry.clientName}</td>
-                <td>${entry.description || '-'}</td>
-                <td style="font-weight: 600; color: ${entry.type === 'income' ? 'var(--color-success)' : 'var(--color-danger)'}">
+                <td data-label="Date">${formatDate(entry.date)}</td>
+                <td data-label="Client">${entry.clientName}</td>
+                <td data-label="Description">${entry.description || '-'}</td>
+                <td data-label="Amount" style="font-weight: 600; color: ${entry.type === 'income' ? 'var(--color-success)' : 'var(--color-danger)'}">
                     ${entry.type === 'income' ? '+' : '-'}${formatCurrency(entry.amount, currency)}
                 </td>
-                <td><span class="badge badge-${entry.type}">${entry.type}</span></td>
-                <td><span class="badge badge-${entry.status}">${entry.status}</span></td>
-                <td>${formatPaymentMode(entry.paymentMode)}</td>
-                <td>${entry.createdByName || '-'}</td>
-                <td>
+                <td data-label="Type"><span class="badge badge-${entry.type}">${entry.type}</span></td>
+                <td data-label="Status"><span class="badge badge-${entry.status}">${entry.status}</span></td>
+                <td data-label="Payment Mode">${formatPaymentMode(entry.paymentMode)}</td>
+                <td data-label="Created By">${entry.createdByName || '-'}</td>
+                <td data-label="Approval">
                     <span class="badge ${entry.approvalStatus === 'approved' ? 'badge-success' : (entry.approvalStatus === 'declined' ? 'badge-danger' : 'badge-warning')}">
                         ${formatStatus(entry.approvalStatus || 'pending')}
                     </span>
                 </td>
-                <td>
+                <td data-label="Actions">
                     <div class="action-buttons">
                         <button class="action-btn edit" data-id="${entry.id}" title="Edit">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1353,6 +1359,99 @@ class App {
         } catch (error) {
             console.error('Error rendering pending approvals:', error);
         }
+    }
+    /**
+     * Helper to download a blob as a file
+     */
+    downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    /**
+     * Export data to CSV
+     */
+    exportToCSV(data, filename) {
+        const entries = data.finance_entries || [];
+        if (entries.length === 0) {
+            showToast('No entries to export', 'info');
+            return;
+        }
+
+        const headers = ['Date', 'Client', 'Description', 'Amount', 'Type', 'Status', 'Payment Mode', 'Created By'];
+        const csvRows = [headers.join(',')];
+
+        entries.forEach(entry => {
+            const row = [
+                entry.date,
+                `"${(entry.client_name || '').replace(/"/g, '""')}"`,
+                `"${(entry.description || '').replace(/"/g, '""')}"`,
+                entry.amount,
+                entry.type,
+                entry.status,
+                entry.payment_mode,
+                `"${(entry.created_by_name || '').replace(/"/g, '""')}"`
+            ];
+            csvRows.push(row.join(','));
+        });
+
+        const csvContent = csvRows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        this.downloadBlob(blob, filename);
+    }
+
+    /**
+     * Export data to PDF report
+     */
+    exportToPDF(data, filename) {
+        const entries = data.finance_entries || [];
+        if (entries.length === 0) {
+            showToast('No entries to export', 'info');
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Add Title
+        doc.setFontSize(18);
+        doc.text('FinanceFlow - Financial Report', 14, 22);
+
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+
+        // Prepare table data
+        const tableColumn = ["Date", "Client", "Description", "Amount", "Type", "Status"];
+        const tableRows = [];
+
+        entries.forEach(entry => {
+            const rowData = [
+                entry.date,
+                entry.client_name || '',
+                entry.description || '',
+                `${window.appCurrency}${parseFloat(entry.amount).toFixed(2)}`,
+                entry.type.toUpperCase(),
+                entry.status.toUpperCase()
+            ];
+            tableRows.push(rowData);
+        });
+
+        // Add AutoTable
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 40,
+            theme: 'grid',
+            headStyles: { fillColor: [99, 102, 241] }, // Primary color
+            alternateRowStyles: { fillColor: [245, 247, 250] }
+        });
+
+        doc.save(filename);
     }
 }
 

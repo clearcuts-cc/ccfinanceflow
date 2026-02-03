@@ -1215,12 +1215,19 @@
 
                         <div class="settings-card danger-zone">
                             <h3>Data Management</h3>
-                            <div class="setting-item">
+                            <div class="setting-item export-item">
                                 <div class="setting-info">
                                     <span class="setting-label">Export Data</span>
-                                    <span class="setting-description">Download all your data as JSON</span>
+                                    <span class="setting-description">Download all your data in preferred format</span>
                                 </div>
-                                <button class="btn btn-secondary" id="exportDataBtn">Export</button>
+                                <div class="export-actions">
+                                    <select id="exportFormat" class="filter-select export-select">
+                                        <option value="json">JSON (Backup)</option>
+                                        <option value="csv">CSV (Spreadsheet)</option>
+                                        <option value="pdf">PDF (Report)</option>
+                                    </select>
+                                    <button class="btn btn-secondary" id="exportDataBtn">Export</button>
+                                </div>
                             </div>
                             <div class="setting-item">
                                 <div class="setting-info">
@@ -1598,6 +1605,10 @@
 
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- PDF Generation Libraries -->
+    <script src="js/jspdf.min.js"></script>
+    <script src="js/jspdf.autotable.min.js"></script>
 
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
