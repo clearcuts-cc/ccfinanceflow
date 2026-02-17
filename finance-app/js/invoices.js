@@ -718,7 +718,7 @@ class InvoiceManager {
         doc.setFontSize(8);
         doc.setTextColor(...grayColor);
         doc.setFont('helvetica', 'normal');
-        doc.text('Payment is due within 30 days. Please include the invoice number with your payment.', 20, footerY + 5);
+        doc.text('Payment is due within 3 days. Please include the invoice number with your payment.', 20, footerY + 5);
 
         // Save PDF
         doc.save(`${data.invoiceNumber}.pdf`);
